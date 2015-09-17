@@ -1,0 +1,35 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 18
+    buildToolsVersion "22.0.1"
+    defaultConfig {
+        applicationId "com.dropbox.android.sample"
+        minSdkVersion 18
+        compileOptions {
+            sourceCompatibility JavaVersion.VERSION_1_5
+            targetCompatibility JavaVersion.VERSION_1_5
+        }
+    }
+    buildTypes {
+        debug {
+            debuggable true
+        }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+        }
+    }
+    productFlavors {
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_6
+        targetCompatibility JavaVersion.VERSION_1_6
+    }
+}
+
+dependencies {
+    compile files('libs/dropbox-android-sdk-1.6.3.jar')
+    compile files('libs/httpmime-4.0.3.jar')
+    compile files('libs/json_simple-1.1.jar')
+}
