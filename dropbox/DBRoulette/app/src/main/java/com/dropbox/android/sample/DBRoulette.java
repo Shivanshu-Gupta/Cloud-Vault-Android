@@ -197,7 +197,7 @@ public class DBRoulette extends Activity {
         });
 
 
-        // This is the button to take a photo
+        // This is the button to download a random photo
         mRoulette = (Button)findViewById(R.id.roulette_button);
 
         mRoulette.setOnClickListener(new OnClickListener() {
