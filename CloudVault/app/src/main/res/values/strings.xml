@@ -1,6 +1,11 @@
 <resources>
     <string name="app_name">CloudVault</string>
 
-    <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
+    <string name="link_cloud">Link with Dropbox</string>
+    <string name="upload">Upload</string>
+    <string name="download">Download</string>
+    <string name="delete">Delete</string>
+    <string name="chooser_title">Choose the File to Upload</string>
+
 </resources>

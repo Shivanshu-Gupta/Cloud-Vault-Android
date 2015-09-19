@@ -4,6 +4,11 @@ android {
     compileSdkVersion 22
     buildToolsVersion "22.0.1"
 
+    packagingOptions {
+        exclude 'META-INF/LICENSE.txt'
+        exclude 'META-INF/NOTICE.txt'
+    }
+
     defaultConfig {
         applicationId "com.cloudsecurity.cloudvault"
         minSdkVersion 17
@@ -22,5 +27,8 @@ android {
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile files('libs/dropbox-android-sdk-1.6.3.jar')
+    compile files('libs/openrq-3.3.2.jar')
+    compile files('libs/commons-io-2.4.jar')
     compile 'com.android.support:appcompat-v7:22.2.0'
+    compile project(':aFileChooser')
 }
