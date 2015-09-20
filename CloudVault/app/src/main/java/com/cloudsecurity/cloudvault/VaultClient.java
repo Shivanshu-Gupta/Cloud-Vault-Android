@@ -171,7 +171,7 @@ public class VaultClient extends Service {
                 if(mApi==null) {
                     Log.v(TAG, "mApi is null in VaultClient....");
                 }
-                UploadToDropbox upload = new UploadToDropbox(this, mApi, cloudFilePath + "_" + blockID, dataArrays.get(0));
+                UploadToDropbox upload = new UploadToDropbox(this, mApi, cloudFilePath + "_" + blockID, dataArrays.get(0).toByteArray());
                 upload.execute();
 //                cloudsHandler.uploadFile(dataArrays, cloudFilePath + "_"
 //                        + blockID, WriteMode.OVERWRITE);

@@ -30,7 +30,7 @@ public class UploadToDropbox extends AsyncTask<Void, Long, Boolean> {
     private DropboxAPI<?> mApi;
     private String mPath;
     private File mFile;
-    private ByteArrayOutputStream mFileData;
+    private byte[] mFileData;
 
     private long mFileLen;
     private DropboxAPI.UploadRequest mRequest;
@@ -51,10 +51,10 @@ public class UploadToDropbox extends AsyncTask<Void, Long, Boolean> {
     }
 
     public UploadToDropbox(Context context, DropboxAPI<?> api, String cloudFilePath,
-                           ByteArrayOutputStream data) {
+                           byte[] data) {
         // We set the context this way so we don't accidentally leak activities
         mContext = context.getApplicationContext();
-        mFileLen = data.size();
+        mFileLen = data.length;
         mApi = api;
         mPath = cloudFilePath;
         mFileData = data;
@@ -71,7 +71,7 @@ public class UploadToDropbox extends AsyncTask<Void, Long, Boolean> {
                 is = new FileInputStream(mFile);
             }
             else {
-                is = new ByteArrayInputStream(mFileData.toByteArray());
+                is = new ByteArrayInputStream(mFileData);
             }
             Log.v(TAG, "file size: " + mFileLen);
             if(mApi != null) {

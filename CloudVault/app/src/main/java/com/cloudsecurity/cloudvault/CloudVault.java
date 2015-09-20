@@ -47,9 +47,6 @@ public class CloudVault extends AppCompatActivity {
     private LinearLayout display;
     private Button uploadButton;
 
-    private ListView fileList;
-    private ListAdapter fileListAdapter;
-
     //TODO move the dropbox authentication to an appropriate class
     private static final String APP_KEY = "jahcg9ypjnokceh";
     private static final String APP_SECRET = "7tgx90ejlj65v12";
@@ -59,7 +56,6 @@ public class CloudVault extends AppCompatActivity {
     private static final boolean USE_OAUTH1 = false;
     DropboxAPI<AndroidAuthSession> mApi;
     private boolean mLoggedIn;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
