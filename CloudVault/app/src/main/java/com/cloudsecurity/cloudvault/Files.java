@@ -3,20 +3,30 @@ package com.cloudsecurity.cloudvault;
 import android.app.Activity;
 import android.app.ListFragment;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.app.Fragment;
+import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
+import android.view.ContextMenu;
 import android.view.LayoutInflater;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.CursorAdapter;
+import android.widget.RelativeLayout;
 import android.widget.SimpleCursorAdapter;
+import android.widget.TextView;
 
 
 /**
@@ -28,10 +38,16 @@ import android.widget.SimpleCursorAdapter;
  * create an instance of this fragment.
  */
 public class Files extends ListFragment {
+    private static final String TAG = "CloudVault";
+    public static final String ARG_ITEM_ID = "cloud_list_fragment";
 
     private DatabaseHelper db = null;
     private AsyncTask task = null;
     private OnFragmentInteractionListener mListener;
+
+    VaultClient client;
+    boolean mBound;
+    private ServiceConnection mConnection;
 
     private LocalBroadcastManager mLocalBroadcastManager = null;
     private BroadcastReceiver receiver = null;
@@ -50,7 +66,7 @@ public class Files extends ListFragment {
      * @param param2 Parameter 2.
      * @return A new instance of fragment Files.
      */
-    // TODO: Rename and change types and number of parameters
+    //unused as of now.
     public static Files newInstance(String param1, String param2) {
         Files fragment = new Files();
         Bundle args = new Bundle();
@@ -63,8 +79,43 @@ public class Files extends ListFragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        mConnection = new ServiceConnection() {
 
+            @Override
+            public void onServiceConnected(ComponentName className,
+                                           IBinder service) {
+                VaultClient.ClientBinder binder = (VaultClient.ClientBinder) service;
+                client = binder.getService();
+                mBound = true;
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName arg0) {
+                mBound = false;
+            }
+        };
         setRetainInstance(true);
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        // Bind to LocalService
+        Intent intent = new Intent(getActivity(), VaultClient.class);
+        getActivity().startService(intent);
+        getActivity().bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        Intent intent = new Intent(getActivity(), VaultClient.class);
+        getActivity().stopService(intent);
+        // Unbind from the service
+        if (mBound) {
+            getActivity().unbindService(mConnection);
+            mBound = false;
+        }
     }
 
 //    @Override
@@ -72,13 +123,6 @@ public class Files extends ListFragment {
 //                             Bundle savedInstanceState) {
 //        // Inflate the layout for this fragment
 //        return inflater.inflate(R.layout.fragment_files, container, false);
-//    }
-//
-//    // TODO: Rename method, update argument and hook method into UI event
-//    public void onButtonPressed(Uri uri) {
-//        if (mListener != null) {
-//            mListener.onFragmentInteraction(uri);
-//        }
 //    }
 
     @Override
@@ -95,6 +139,7 @@ public class Files extends ListFragment {
 
         setListAdapter(adapter);
 
+        registerForContextMenu(getListView());
 
         db = DatabaseHelper.getInstance(getActivity());
         task = new LoadCursorTask().execute();
@@ -102,12 +147,44 @@ public class Files extends ListFragment {
         receiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                task = new LoadCursorTask().execute();
+                if(intent !=null) {
+                    final String action = intent.getAction();
+                    if (action.equals(VaultClient.FILE_UPLOADED))
+                        task = new LoadCursorTask().execute();
+                }
             }
         };
-        filter = new IntentFilter(VaultClient.INTENT_FILE_UPLOADED);
+        filter = new IntentFilter(VaultClient.FILE_UPLOADED);
+    }
+    @Override
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+
+        Log.i("ContextMenu", "Context Menu Called");
+        super.onCreateContextMenu(menu, v, menuInfo);
+        Log.i("ContextMenu","View ID = " + v.getId());
+        MenuInflater inflater = getActivity().getMenuInflater();
+        inflater.inflate(R.menu.menu_long_press, menu);
+        Log.i("ContextMenu", "Menu Inflation Done");
     }
 
+    @Override
+    public boolean onContextItemSelected(MenuItem item) {
+        AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
+        Log.i("ContextMenu", "OnContextItem Selected");
+        switch(item.getItemId()) {
+            case R.id.download:
+                RelativeLayout selectedRow = ((RelativeLayout) info.targetView);
+                String  filename = ((TextView) selectedRow.getChildAt(0)).getText().toString();
+                client.download(filename);
+                return true;
+            case R.id.delete:
+                Log.i("ContextMenu","Delete : " + info.position);
+                // remove stuff here
+                return true;
+            default:
+                return super.onContextItemSelected(item);
+        }
+    }
     @Override
     public void onResume() {
         super.onResume();
@@ -120,23 +197,6 @@ public class Files extends ListFragment {
         mLocalBroadcastManager.unregisterReceiver(receiver);
     }
 
-    //    @Override
-//    public void onAttach(Activity activity) {
-//        super.onAttach(activity);
-//        try {
-//            mListener = (OnFragmentInteractionListener) activity;
-//        } catch (ClassCastException e) {
-//            throw new ClassCastException(activity.toString()
-//                    + " must implement OnFragmentInteractionListener");
-//        }
-//    }
-
-//    @Override
-//    public void onDetach() {
-//        super.onDetach();
-//        mListener = null;
-//    }
-
     @Override
     public void onDestroy() {
         if (task != null) {
@@ -147,22 +207,6 @@ public class Files extends ListFragment {
         db.close();
 
         super.onDestroy();
-    }
-
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     * <p>
-     * See the Android Training lesson <a href=
-     * "http://developer.android.com/training/basics/fragments/communicating.html"
-     * >Communicating with Other Fragments</a> for more information.
-     * //
-     */
-    public interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
-        public void onFragmentInteraction(Uri uri);
     }
 
     abstract private class BaseTask<T> extends AsyncTask<T, Void, Cursor> {
@@ -200,4 +244,25 @@ public class Files extends ListFragment {
         }
     }
 
+    //    @Override
+//    public void onAttach(Activity activity) {
+//        super.onAttach(activity);
+//        try {
+//            mListener = (OnFragmentInteractionListener) activity;
+//        } catch (ClassCastException e) {
+//            throw new ClassCastException(activity.toString()
+//                    + " must implement OnFragmentInteractionListener");
+//        }
+//    }
+
+    //    @Override
+//    public void onDetach() {
+//        super.onDetach();
+//        mListener = null;
+//    }
+
+    public interface OnFragmentInteractionListener {
+        // TODO: Update argument type and name
+        public void onFragmentInteraction(Uri uri);
+    }
 }
