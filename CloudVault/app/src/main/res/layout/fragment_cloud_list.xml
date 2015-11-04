@@ -1,10 +1,27 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.cloudsecurity.cloudvault.cloud.CloudListFragment">
+    tools:context="com.cloudsecurity.cloudvault.cloud.CloudListFragment"
+    android:background="#EDEDED" >
 
-    <!-- TODO: Update blank fragment layout -->
-    <TextView android:layout_width="match_parent" android:layout_height="match_parent"
-        android:text="@string/hello_blank_fragment" />
+    <ListView
+        android:id="@+id/list_clouds"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:divider="@color/transparent"
+        android:dividerHeight="10dp"
+        android:drawSelectorOnTop="true"
+        android:footerDividersEnabled="false"
+        android:padding="10dp"
+        android:scrollbarStyle="outsideOverlay" >
+    </ListView>
 
-</FrameLayout>
+    <Button
+        android:id="@+id/add_cloud"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/add_cloud_btn"
+        android:layout_alignParentBottom="true" />
+
+</RelativeLayout>

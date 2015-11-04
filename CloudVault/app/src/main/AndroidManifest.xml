@@ -16,7 +16,6 @@
             android:label="@string/app_name" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -25,8 +24,6 @@
             android:configChanges="orientation|keyboard"
             android:launchMode="singleTask" >
             <intent-filter>
-
-                <!-- Change this to be db- followed by your app key -->
                 <data android:scheme="db-jahcg9ypjnokceh" />
 
                 <action android:name="android.intent.action.VIEW" />
@@ -51,6 +48,12 @@
                 <data android:mimeType="*/*" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".cloud.dropbox.DropboxAuthenticator" >
+            <intent-filter>
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
 
         <provider
             android:name="com.ianhanniballake.localstorage.LocalStorageProvider"
@@ -65,7 +68,11 @@
         </provider>
 
         <service
-            android:name=".dropbox.DropboxHandle"
+            android:name=".cloud.dropbox.Dropbox"
+            android:exported="false" >
+        </service>
+        <service
+            android:name=".dropbox.Dropbox"
             android:exported="false" >
         </service>
         <service
@@ -73,6 +80,7 @@
             android:enabled="true"
             android:exported="false" >
         </service>
+
     </application>
 
 </manifest>

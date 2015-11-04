@@ -1,18 +1,26 @@
 package com.cloudsecurity.cloudvault.cloud;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
+import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * Created on 24-10-2015.
  */
 public class CloudMeta {
     private int id;
-    private String email;
+    private String name;
+    private ConcurrentHashMap<String, String> meta;
 
     public CloudMeta() {
     }
 
-    public CloudMeta(int id, String email) {
+    public CloudMeta(int id, String name, ConcurrentHashMap<String,String> meta) {
         this.id = id;
-        this.email = email;
+        this.name = name;
+        this.meta = meta;
     }
 
     public int getId() {
@@ -23,12 +31,20 @@ public class CloudMeta {
         this.id = id;
     }
 
-    public String getEmail() {
-        return email;
+    public String getName() {
+        return name;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public ConcurrentHashMap<String, String> getMeta() {
+        return meta;
+    }
+
+    public void setMeta(ConcurrentHashMap<String, String> meta) {
+        this.meta = meta;
     }
 
     @Override
@@ -55,6 +71,7 @@ public class CloudMeta {
 
     @Override
     public String toString() {
-        return "Product [id=" + id + ", Email Id=" + email + "]";
+        return "Product [id=" + id + ", Cloud name=" + name + ", Meta=" + meta + "]";
     }
+
 }

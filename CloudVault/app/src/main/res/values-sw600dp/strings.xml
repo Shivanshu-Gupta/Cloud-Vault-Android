@@ -3,5 +3,6 @@
     <string name="upload">Upload</string>
     <string name="download">Download</string>
     <string name="delete">Delete</string>
-    <string name="chooser_title">Choose the File to Upload</string>
+    <string name="upload_chooser_title">Choose the File to Upload</string>
+    <string name="add_cloud_btn">Add New Cloud</string>
 </resources>

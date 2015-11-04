@@ -2,6 +2,7 @@ package com.cloudsecurity.cloudvault;
 
 import android.app.Activity;
 import android.app.ListFragment;
+import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -23,10 +24,16 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.Button;
 import android.widget.CursorAdapter;
 import android.widget.RelativeLayout;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import com.ipaulpro.afilechooser.utils.FileUtils;
+
+import java.io.File;
 
 
 /**
@@ -41,6 +48,9 @@ public class Files extends ListFragment {
     private static final String TAG = "CloudVault";
     public static final String ARG_ITEM_ID = "cloud_list_fragment";
 
+    //view elements
+    private Button uploadButton;
+
     private DatabaseHelper db = null;
     private AsyncTask task = null;
     private OnFragmentInteractionListener mListener;
@@ -53,6 +63,8 @@ public class Files extends ListFragment {
     private BroadcastReceiver receiver = null;
     private IntentFilter filter;
 
+    //intent request codes
+    private static final int UPLOAD_REQUEST_CODE = 100; // onActivityResult request code
 
     public Files() {
         // Required empty public constructor
@@ -107,23 +119,20 @@ public class Files extends ListFragment {
     }
 
     @Override
-    public void onStop() {
-        super.onStop();
-        Intent intent = new Intent(getActivity(), VaultClient.class);
-        getActivity().stopService(intent);
-        // Unbind from the service
-        if (mBound) {
-            getActivity().unbindService(mConnection);
-            mBound = false;
-        }
-    }
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        // Inflate the layout for this fragment
+        View view = inflater.inflate(R.layout.fragment_files, container, false);
+        uploadButton = (Button) view.findViewById(R.id.upload_button);
+        uploadButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showChooser();
+            }
+        });
+        return view;
 
-//    @Override
-//    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-//                             Bundle savedInstanceState) {
-//        // Inflate the layout for this fragment
-//        return inflater.inflate(R.layout.fragment_files, container, false);
-//    }
+    }
 
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
@@ -185,6 +194,49 @@ public class Files extends ListFragment {
                 return super.onContextItemSelected(item);
         }
     }
+
+
+    private void showChooser() {
+        // Use the GET_CONTENT intent from the utility class
+        Intent target = FileUtils.createGetContentIntent();
+        // Create the chooser Intent
+        Intent intent = Intent.createChooser(
+                target, getString(R.string.upload_chooser_title));
+        try {
+            startActivityForResult(intent, UPLOAD_REQUEST_CODE);
+        } catch (ActivityNotFoundException e) {
+            // The reason for the existence of aFileChooser
+        }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch (requestCode) {
+            case UPLOAD_REQUEST_CODE:
+                // If the file selection was successful
+                if (resultCode == Activity.RESULT_OK) {
+                    if (data != null) {
+                        // Get the URI of the selected file
+                        final Uri uri = data.getData();
+                        Log.i(TAG, "Uri = " + uri.toString());
+
+                        try {
+                            // Get the file path from the URI
+                            final String path = FileUtils.getPath(getActivity(), uri);
+                            File file = new File(path);
+                            Toast.makeText(getActivity(),
+                                    "File Selected: " + path, Toast.LENGTH_LONG).show();
+                            client.upload(file);
+                        } catch (Exception e) {
+                            Log.e("FileSelectorTest", "File select error", e);
+                        }
+                    }
+                }
+                break;
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
     @Override
     public void onResume() {
         super.onResume();
@@ -195,6 +247,18 @@ public class Files extends ListFragment {
     public void onPause() {
         super.onPause();
         mLocalBroadcastManager.unregisterReceiver(receiver);
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        Intent intent = new Intent(getActivity(), VaultClient.class);
+        getActivity().stopService(intent);
+        // Unbind from the service
+        if (mBound) {
+            getActivity().unbindService(mConnection);
+            mBound = false;
+        }
     }
 
     @Override

@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string-array name="supported_cloud_types_array">DropBox, FolderClod</string-array>
+    <string-array name="supported_cloud_types_array">
+        <item>Dropbox</item>
+        <item>FolderCloud</item>
+    </string-array>
 </resources>

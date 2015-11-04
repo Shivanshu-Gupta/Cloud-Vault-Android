@@ -25,10 +25,11 @@ android {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile fileTree(include: ['*.jar'], dir: 'libs')
     compile files('libs/dropbox-android-sdk-1.6.3.jar')
     compile files('libs/openrq-3.3.2.jar')
     compile files('libs/commons-io-2.4.jar')
     compile 'com.android.support:appcompat-v7:22.2.0'
     compile project(':aFileChooser')
+    compile files('libs/gson-2.2.3.jar')
 }

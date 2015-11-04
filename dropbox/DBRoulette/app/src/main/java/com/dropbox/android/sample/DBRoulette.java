@@ -128,6 +128,7 @@ public class DBRoulette extends Activity {
                 if (mLoggedIn) {
                     logOut();
                 } else {
+                    Log.v(TAG, "starting authentication");
                     // Start the remote authentication
                     if (USE_OAUTH1) {
                         mApi.getSession().startAuthentication(DBRoulette.this);
@@ -220,6 +221,7 @@ public class DBRoulette extends Activity {
 
     @Override
     protected void onResume() {
+        Log.v(TAG, "back to onResume");
         super.onResume();
         AndroidAuthSession session = mApi.getSession();
 

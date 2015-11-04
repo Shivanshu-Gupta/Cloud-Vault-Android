@@ -6,6 +6,22 @@
     <string name="upload">Upload</string>
     <string name="download">Download</string>
     <string name="delete">Delete</string>
-    <string name="chooser_title">Choose the File to Upload</string>
+    <string name="upload_chooser_title">Choose the File to Upload</string>
+    <string name="cloud_meta_file">CloudMetaData</string>
+
+<!-- CloudListFragment -->
+    <string name="clouds">Clouds</string>
+    <string name="no_clouds">No Clouds</string>
+    <string name="no_clouds_msg">Add clouds to the vault.</string>
+    <string name="not_enough_clouds">Not Enough Clouds</string>
+    <string name="not_enough_clouds_msg">Less than 4 clouds have been configured. Add more!</string>
+    <string name="pick_cloud_type">Select the Cloud Type</string>
+    <!--<string name="dropbox">DROPBOX</string>-->
+    <!--<string name="foldercloud">FOLDERCLOUD</string>-->
+    <string name="cloud_added">New Cloud Added</string>
+    <string name="foldercloud_chooser_title">Choose the folder to use for Storage.</string>
+    <string name="title_activity_dropbox_authenticator">DropboxAuthenticator</string>
+    <string name="dropbox_uid">uid</string>
+    <string name="add_cloud_btn">Add New Cloud</string>
 
 </resources>
