@@ -162,7 +162,7 @@ public class Files extends ListFragment {
             public void onReceive(Context context, Intent intent) {
                 if(intent !=null) {
                     final String action = intent.getAction();
-                    if (action.equals(VaultClient.FILE_UPLOADED))
+                    if (action.equals(VaultClient.FILE_UPLOADED) || action.equals(VaultClient.FILE_DELETED))
                         task = new LoadCursorTask().execute();
                 }
             }
@@ -185,15 +185,14 @@ public class Files extends ListFragment {
         Log.v(TAG, "Files : onContextItemSelected");
         AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
         Log.i("ContextMenu", "OnContextItem Selected");
+        RelativeLayout selectedRow = ((RelativeLayout) info.targetView);
+        String  filename = ((TextView) selectedRow.getChildAt(0)).getText().toString();
         switch(item.getItemId()) {
             case R.id.download:
-                RelativeLayout selectedRow = ((RelativeLayout) info.targetView);
-                String  filename = ((TextView) selectedRow.getChildAt(0)).getText().toString();
                 client.download(filename);
                 return true;
             case R.id.delete:
-                Log.i("ContextMenu","Delete : " + info.position);
-                // remove stuff here
+                client.delete(filename);
                 return true;
             default:
                 return super.onContextItemSelected(item);

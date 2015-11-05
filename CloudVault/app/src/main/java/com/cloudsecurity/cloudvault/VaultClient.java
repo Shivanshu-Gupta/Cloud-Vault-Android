@@ -39,7 +39,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.apache.commons.io.FileUtils.readFileToByteArray;
-import static org.apache.commons.io.FileUtils.write;
 
 /**
  * An {@link IntentService} subclass for handling asynchronous task requests in
@@ -51,6 +50,7 @@ import static org.apache.commons.io.FileUtils.write;
 public class VaultClient extends Service {
     private static final String TAG = "CloudVault";
     public static final String FILE_UPLOADED = "com.cloudsecurity.cloudvault.action.FILE_UPLOADED";
+    public static final String FILE_DELETED = "com.cloudsecurity.cloudvault.action.FILE_DELETED";
     public static final String DOWNLOADS_DIR = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getPath();
     private final IBinder mBinder = new ClientBinder();
     int cloudNum = 1;
@@ -65,6 +65,7 @@ public class VaultClient extends Service {
     private DatabaseHelper db = null;
     private SQLiteDatabase database;
     private InsertTask insertTask = null;
+    private RemoveTask removeTask = null;
 
 //    private Context mContext;
 //
@@ -130,6 +131,7 @@ public class VaultClient extends Service {
     }
 
     public void upload(File file) {
+        Log.v(TAG, "VaultClient : upload : " + file);
         String uploadPath = "";
         String cloudFilePath;
         String localFileName = file.getName();
@@ -158,6 +160,7 @@ public class VaultClient extends Service {
     }
 
     public void download(String cloudFilePath) {
+        Log.v(TAG, "VaultClient : download : " + cloudFilePath);
         String writePath;
         long fileSize;
         String[] cols = new String[]{"ROWID AS _id",
@@ -179,7 +182,29 @@ public class VaultClient extends Service {
             DownloadTask downloadFile = new DownloadTask(cloudFilePath, writePath, fileSize);
             downloadFile.execute(this);
         } else {
-//            throw new FileNotFoundException();
+            Log.e(TAG, "File not found in the database : " + cloudFilePath);
+        }
+    }
+
+    public void delete(String cloudFilePath) {
+        Log.v(TAG, "VaultClient : delete : " + cloudFilePath);
+        String[] cols = new String[]{"ROWID AS _id",
+                DatabaseHelper.FILENAME,
+                DatabaseHelper.SIZE};
+        Cursor cursor = db.getReadableDatabase().query(true, DatabaseHelper.TABLE, cols
+                , DatabaseHelper.FILENAME + "=?",
+                new String[]{cloudFilePath},
+                null, null, null, null);
+
+        if (cursor != null && cursor.moveToFirst() && cursor.getCount() > 0) {
+            String fileName = cursor.getString(cursor.getColumnIndex(DatabaseHelper.FILENAME));
+            long fileSize = cursor.getLong(cursor.getColumnIndex(DatabaseHelper.SIZE));
+            cloudFilePath = (new PathManip(cloudFilePath)).toCloudFormat();
+            DeleteTask deleteFile = new DeleteTask(cloudFilePath, fileSize);
+            deleteFile.execute(this);
+            removeTask = new RemoveTask();
+            removeTask.execute(cloudFilePath);
+        } else {
             Log.e(TAG, "File not found in the database : " + cloudFilePath);
         }
     }
@@ -274,16 +299,16 @@ public class VaultClient extends Service {
             FECParameters fecParams = fecparams.first;
             int symSize = fecParams.symbolSize();
             int blockID = 0, blockCount = fecParams.numberOfSourceBlocks();
-            int packetID = 0, packetCount = 0;
+            int packetID, packetCount;
             int packetlength = symSize + 8;
-            String blockFileName = null;
+            String blockFileName;
             try {
                 ArrayList<byte[]> blocksData = new ArrayList<>();
                 byte[] packetdata;
                 ArrayDataDecoder dataDecoder = OpenRQ.newDecoder(fecParams, 3);
 
                 // reading in all the packets into a byte[][]
-                List<byte[]> packetList = new ArrayList<byte[]>();
+                List<byte[]> packetList = new ArrayList<>();
                 while (blockID < blockCount) {
                     blockFileName = cloudFilePath + "_" + blockID;
                     for(Cloud cloud : clouds) {
@@ -313,12 +338,41 @@ public class VaultClient extends Service {
                 }
 
                 byte dataNew[] = dataDecoder.dataArray();
-//                Path pathNew = Paths.get(writePath);
-//                Files.write(pathNew, dataNew);
                 FileOutputStream fos = new FileOutputStream(writePath);
                 fos.write(dataNew);
             } catch (Exception e) {
                 Log.e(TAG, "Exception in downloading " + writePath, e);
+            }
+            return null;
+        }
+    }
+
+    private class DeleteTask extends AsyncTask<Context, Void, Void> {
+        Long fileSize;
+        String cloudFilePath;
+
+        public DeleteTask(String cloudFilePath, long fileSize) {
+            this.fileSize = fileSize;
+            this.cloudFilePath = cloudFilePath;
+        }
+
+        @Override
+        protected Void doInBackground(Context... params) {
+            Context context = params[0];
+            Pair<FECParameters, Integer> fecparams = getParams(fileSize);
+            FECParameters fecParams = fecparams.first;
+            int blockID = 0, blockCount = fecParams.numberOfSourceBlocks();
+            String blockFileName;
+            try {
+                while (blockID < blockCount) {
+                    blockFileName = cloudFilePath + "_" + blockID;
+                    for(Cloud cloud : clouds) {
+                        cloud.delete(context, blockFileName);
+                    }
+                    blockID++;
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Exception in deleting " + cloudFilePath, e);
             }
             return null;
         }
@@ -334,13 +388,6 @@ public class VaultClient extends Service {
     }
 
     abstract private class BaseTask<T> extends AsyncTask<T, Void, Cursor> {
-        @Override
-        public void onPostExecute(Cursor result) {
-            Intent intent = new Intent(FILE_UPLOADED);
-            mLocalBroadcastManager.sendBroadcast(intent);
-            insertTask = null;
-        }
-
         protected Cursor doQuery() {
             Cursor result =
                     db
@@ -359,9 +406,33 @@ public class VaultClient extends Service {
 
     private class InsertTask extends BaseTask<ContentValues> {
         @Override
+        public void onPostExecute(Cursor result) {
+            Intent intent = new Intent(FILE_UPLOADED);
+            mLocalBroadcastManager.sendBroadcast(intent);
+            insertTask = null;
+        }
+
+        @Override
         protected Cursor doInBackground(ContentValues... values) {
             database = db.getWritableDatabase();
             database.insert(DatabaseHelper.TABLE, DatabaseHelper.FILENAME, values[0]);
+            return (doQuery());
+        }
+    }
+
+    private class RemoveTask extends BaseTask<String> {
+        @Override
+        public void onPostExecute(Cursor result) {
+            Intent intent = new Intent(FILE_DELETED);
+            mLocalBroadcastManager.sendBroadcast(intent);
+            removeTask = null;
+        }
+
+        @Override
+        protected Cursor doInBackground(String... values) {
+            database = db.getWritableDatabase();
+            database.delete(DatabaseHelper.TABLE, DatabaseHelper.FILENAME + "=?",
+                    new String[]{values[0]});
             return (doQuery());
         }
     }

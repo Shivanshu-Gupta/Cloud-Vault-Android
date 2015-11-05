@@ -5,6 +5,7 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -35,10 +36,10 @@ public class FolderCloud  implements Cloud{
             FileOutputStream fos = new FileOutputStream(filePath);
             fos.write(data);
         } catch (FileNotFoundException e) {
-            Log.v(TAG, "unable to open file for writing: " + filePath);
+            Log.e(TAG, "unable to open file for writing: " + filePath);
             e.printStackTrace();
         } catch (IOException e) {
-            Log.v(TAG, "Exception while writing to file");
+            Log.e(TAG, "Exception while writing to file");
             e.printStackTrace();
         }
         return false;
@@ -57,12 +58,19 @@ public class FolderCloud  implements Cloud{
             }
             return bos.toByteArray();
         } catch (FileNotFoundException e) {
-            Log.v(TAG, "FolderCloud (" + folderPath + ") : File to download not found");
+            Log.e(TAG, "FolderCloud (" + folderPath + ") : File to download not found");
             e.printStackTrace();
         } catch (IOException e) {
-            Log.v(TAG, "FolderCloud (" + folderPath + ") : Error downloading file");
+            Log.e(TAG, "FolderCloud (" + folderPath + ") : Error downloading file");
             e.printStackTrace();
         }
         return new byte[0];
+    }
+
+    @Override
+    public boolean delete(Context context, String cloudFileName) {
+        String filePath = folderPath + cloudFileName;
+        File file = new File(filePath);
+        return file.delete();
     }
 }

@@ -42,8 +42,6 @@ public class DropboxHandle implements Cloud {
     //                      End app-specific settings.                       //
     ///////////////////////////////////////////////////////////////////////////
 
-    private static final String ACCOUNT_PREFS_NAME = "prefs";
-    public static final String ACCESS_KEY_NAME = "ACCESS_KEY";
     public static final String ACCESS_SECRET_NAME = "ACCESS_SECRET";
     public static final String UID = "uid";
     private CloudMeta meta;
@@ -65,7 +63,6 @@ public class DropboxHandle implements Cloud {
     }
 
     private boolean setupApi() {
-//        AndroidAuthSession session = buildSession();
         AppKeyPair appKeyPair = new AppKeyPair(APP_KEY, APP_SECRET);
         AccessTokenPair accessTokenPair = new AccessTokenPair("oauth2", meta.getMeta().get(ACCESS_SECRET_NAME));
         AndroidAuthSession session = new AndroidAuthSession(appKeyPair,accessTokenPair);
@@ -207,26 +204,10 @@ public class DropboxHandle implements Cloud {
         return null;
     }
 
-//    /**
-//     * Shows keeping the access keys returned from Trusted Authenticator in a local
-//     * store, rather than storing user name & password, and re-authenticating each
-//     * time (which is not to be done, ever).
-//     */
-//    private void loadAuth(AndroidAuthSession session) {
-//        SharedPreferences prefs = mContext.getSharedPreferences(ACCOUNT_PREFS_NAME, 0);
-//        String key = prefs.getString(ACCESS_KEY_NAME, null);
-//        String secret = prefs.getString(ACCESS_SECRET_NAME, null);
-//        if (key == null || secret == null || key.length() == 0 || secret.length() == 0) return;
-//        session.setOAuth2AccessToken(secret);
-//    }
-//
-//    private AndroidAuthSession buildSession() {
-//        AppKeyPair appKeyPair = new AppKeyPair(APP_KEY, APP_SECRET);
-//
-//        AndroidAuthSession session = new AndroidAuthSession(appKeyPair);
-//        loadAuth(session);
-//        return session;
-//    }
+    @Override
+    public boolean delete(Context context, String cloudFileName) {
+        return false;
+    }
 
     private void showToast(String msg) {
         Toast error = Toast.makeText(mContext, msg, Toast.LENGTH_LONG);
