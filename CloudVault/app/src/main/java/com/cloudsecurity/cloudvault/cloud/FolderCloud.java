@@ -51,7 +51,7 @@ public class FolderCloud  implements Cloud{
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             FileInputStream fis = new FileInputStream(filePath);
             byte[] buffer = new byte[1024];
-            int bytes_read = 0;
+            int bytes_read;
             while(-1 != (bytes_read = fis.read(buffer, 0, buffer.length))) {
                 bos.write(buffer, 0, bytes_read);
             }

@@ -39,6 +39,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.apache.commons.io.FileUtils.readFileToByteArray;
+import static org.apache.commons.io.FileUtils.write;
 
 /**
  * An {@link IntentService} subclass for handling asynchronous task requests in
@@ -122,8 +123,7 @@ public class VaultClient extends Service {
         int k = (int) Math.ceil((float) blockSize / (float) symSize);
 
         float gamma = (float) cloudDanger / (float) cloudNum;
-//        //temporarily :
-//        gamma = 0.75F;
+
         int r = (int) Math.ceil((gamma * k + overHead) / (1 - gamma));
 
         return Pair.of(fecParams, r);
@@ -158,8 +158,8 @@ public class VaultClient extends Service {
     }
 
     public void download(String cloudFilePath) {
-        String writePath = null;
-        long fileSize = 0;
+        String writePath;
+        long fileSize;
         String[] cols = new String[]{"ROWID AS _id",
                 DatabaseHelper.FILENAME,
                 DatabaseHelper.SIZE};
@@ -170,7 +170,9 @@ public class VaultClient extends Service {
 
         if (cursor != null && cursor.moveToFirst() && cursor.getCount() > 0) {
             //check if need to add a '/'
-            writePath = DOWNLOADS_DIR + '/' + cloudFilePath;
+//            writePath = DOWNLOADS_DIR + '/' + cloudFilePath;
+            writePath = DOWNLOADS_DIR + "/SURA/" + cloudFilePath;                   //temporarily
+
             String fileName = cursor.getString(cursor.getColumnIndex(DatabaseHelper.FILENAME));
             fileSize = cursor.getLong(cursor.getColumnIndex(DatabaseHelper.SIZE));
             cloudFilePath = (new PathManip(cloudFilePath)).toCloudFormat();
@@ -178,6 +180,7 @@ public class VaultClient extends Service {
             downloadFile.execute(this);
         } else {
 //            throw new FileNotFoundException();
+            Log.e(TAG, "File not found in the database : " + cloudFilePath);
         }
     }
 
@@ -238,11 +241,10 @@ public class VaultClient extends Service {
                         packetID++;
                     }
 
-//                    //TODO handle upload to all the clouds
-//                    Dropbox dropbox = new Dropbox();
-//                    dropbox.upload(context, blockFileName, dataArrays.get(0).toByteArray());
+                    int cloudID = 0;
                     for(Cloud cloud: clouds) {
-                        cloud.upload(context, blockFileName, dataArrays.get(0).toByteArray());
+                        cloud.upload(context, blockFileName, dataArrays.get(cloudID).toByteArray());
+                        cloudID++;
                     }
                     blockID++;
                 }
@@ -276,7 +278,7 @@ public class VaultClient extends Service {
             int packetlength = symSize + 8;
             String blockFileName = null;
             try {
-//                ArrayList<byte[]> blockdatas;
+                ArrayList<byte[]> blocksData = new ArrayList<>();
                 byte[] packetdata;
                 ArrayDataDecoder dataDecoder = OpenRQ.newDecoder(fecParams, 3);
 
@@ -284,29 +286,22 @@ public class VaultClient extends Service {
                 List<byte[]> packetList = new ArrayList<byte[]>();
                 while (blockID < blockCount) {
                     blockFileName = cloudFilePath + "_" + blockID;
-//                    blockdatas = cloudsHandler.downloadFile(blockFileName);
-//                    for (byte[] blockdata : blockdatas) {
-//                        packetCount = blockdata.length / packetlength;
-//                        for (int j = 0; j < packetCount; j++) {
-//                            packetdata = Arrays.copyOfRange(blockdata, j
-//                                    * packetlength, (j + 1) * packetlength);
-//                            packetList.add(packetdata);
-//                        }
-//                    }
-                    Dropbox dropbox = new Dropbox();
-                    byte[] blockdata = dropbox.download(context, blockFileName);
-                    packetCount = blockdata.length / packetlength;
-                    for (int j = 0; j < packetCount; j++) {
-                        packetdata = Arrays.copyOfRange(blockdata, j
-                                * packetlength, (j + 1) * packetlength);
-                        packetList.add(packetdata);
+                    for(Cloud cloud : clouds) {
+                        blocksData.add(cloud.download(context, blockFileName));
+                    }
+                    for (byte[] blockData : blocksData) {
+                        packetCount = blockData.length / packetlength;
+                        for (int j = 0; j < packetCount; j++) {
+                            packetdata = Arrays.copyOfRange(blockData, j
+                                    * packetlength, (j + 1) * packetlength);
+                            packetList.add(packetdata);
+                        }
                     }
 
                     blockID++;
                 }
                 Log.i(TAG, "packets have been downloaded!");
                 packetID = 0;
-                packetCount = packetList.size();
                 while (!dataDecoder.isDataDecoded() && packetID < packetList.size()) {
                     byte[] packet = packetList.get(packetID);
                     EncodingPacket encPack = dataDecoder.parsePacket(packet, true)
