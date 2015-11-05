@@ -323,7 +323,7 @@ public class VaultClient extends Service {
                 FileOutputStream fos = new FileOutputStream(writePath);
                 fos.write(dataNew);
             } catch (Exception e) {
-                Log.e(TAG, "Exception in downloading to " + writePath, e);
+                Log.e(TAG, "Exception in downloading " + writePath, e);
             }
             return null;
         }

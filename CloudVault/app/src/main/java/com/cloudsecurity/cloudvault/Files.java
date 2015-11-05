@@ -90,6 +90,7 @@ public class Files extends ListFragment {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        Log.v(TAG, "Files : onCreate");
         super.onCreate(savedInstanceState);
         mConnection = new ServiceConnection() {
 
@@ -111,6 +112,7 @@ public class Files extends ListFragment {
 
     @Override
     public void onStart() {
+        Log.v(TAG, "Files : onStart");
         super.onStart();
         // Bind to LocalService
         Intent intent = new Intent(getActivity(), VaultClient.class);
@@ -121,12 +123,14 @@ public class Files extends ListFragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        Log.v(TAG, "Files : onCreateView");
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_files, container, false);
         uploadButton = (Button) view.findViewById(R.id.upload_button);
         uploadButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                Log.v(TAG, "Files : upload button clicked.");
                 showChooser();
             }
         });
@@ -137,7 +141,7 @@ public class Files extends ListFragment {
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
+        Log.v(TAG, "Files : onViewCreated");
         SimpleCursorAdapter adapter =
                 new SimpleCursorAdapter(getActivity(), R.layout.file_row,
                         null, new String[]{
@@ -167,7 +171,7 @@ public class Files extends ListFragment {
     }
     @Override
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
-
+        Log.v(TAG, "Files : onCreateContextMenu");
         Log.i("ContextMenu", "Context Menu Called");
         super.onCreateContextMenu(menu, v, menuInfo);
         Log.i("ContextMenu","View ID = " + v.getId());
@@ -178,6 +182,7 @@ public class Files extends ListFragment {
 
     @Override
     public boolean onContextItemSelected(MenuItem item) {
+        Log.v(TAG, "Files : onContextItemSelected");
         AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
         Log.i("ContextMenu", "OnContextItem Selected");
         switch(item.getItemId()) {
@@ -211,6 +216,7 @@ public class Files extends ListFragment {
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        Log.v(TAG, "Files : onActivityResult");
         switch (requestCode) {
             case UPLOAD_REQUEST_CODE:
                 // If the file selection was successful
@@ -239,18 +245,21 @@ public class Files extends ListFragment {
 
     @Override
     public void onResume() {
+        Log.v(TAG, "Files : onResume");
         super.onResume();
         mLocalBroadcastManager.registerReceiver(receiver, filter);
     }
 
     @Override
     public void onPause() {
+        Log.v(TAG, "Files : onPause");
         super.onPause();
         mLocalBroadcastManager.unregisterReceiver(receiver);
     }
 
     @Override
     public void onStop() {
+        Log.v(TAG, "Files : onStop");
         super.onStop();
         Intent intent = new Intent(getActivity(), VaultClient.class);
         getActivity().stopService(intent);
@@ -263,6 +272,7 @@ public class Files extends ListFragment {
 
     @Override
     public void onDestroy() {
+        Log.v(TAG, "Files : onDestroy");
         if (task != null) {
             task.cancel(false);
         }

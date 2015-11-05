@@ -4,6 +4,7 @@ import android.content.Context;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
+import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -15,7 +16,6 @@ import java.io.IOException;
 public class FolderCloud  implements Cloud{
     private static final String TAG = "CloudVault";
     public static final String FOLDERCLOUD = "FOLDERCLOUD";
-    private static final String vaultPath = "/CLOUDVAULT/";
 
     public static final String PATH = "path";
 
@@ -25,12 +25,12 @@ public class FolderCloud  implements Cloud{
 
     public FolderCloud(Context mContext, String folderPath) {
         this.mContext = mContext;
-        this.folderPath = folderPath;
+        this.folderPath = folderPath + "/";
     }
 
     @Override
     public boolean upload(Context context, String cloudFileName, byte[] data) {
-        String filePath = folderPath + vaultPath + cloudFileName;
+        String filePath = folderPath + cloudFileName;
         try {
             FileOutputStream fos = new FileOutputStream(filePath);
             fos.write(data);
@@ -46,11 +46,21 @@ public class FolderCloud  implements Cloud{
 
     @Override
     public byte[] download(Context context, String cloudFileName) {
-        String filePath = folderPath + vaultPath + cloudFileName;
+        String filePath = folderPath + cloudFileName;
         try {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
             FileInputStream fis = new FileInputStream(filePath);
+            byte[] buffer = new byte[1024];
+            int bytes_read = 0;
+            while(-1 != (bytes_read = fis.read(buffer, 0, buffer.length))) {
+                bos.write(buffer, 0, bytes_read);
+            }
+            return bos.toByteArray();
         } catch (FileNotFoundException e) {
-            Log.v(TAG, "");
+            Log.v(TAG, "FolderCloud (" + folderPath + ") : File to download not found");
+            e.printStackTrace();
+        } catch (IOException e) {
+            Log.v(TAG, "FolderCloud (" + folderPath + ") : Error downloading file");
             e.printStackTrace();
         }
         return new byte[0];

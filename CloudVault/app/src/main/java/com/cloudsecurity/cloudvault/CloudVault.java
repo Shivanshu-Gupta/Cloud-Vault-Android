@@ -64,10 +64,12 @@ public class CloudVault extends AppCompatActivity {
         CloudSharedPref cloudSharedPref = new CloudSharedPref(this);
         int cloudCount = cloudSharedPref.getCloudCount(this);
         if(cloudCount >= 4) {
+            Log.v(TAG, "Enough Clouds for functioning. Setting the content to Files Fragment.");
             contentFragment = new Files();
             setFragmentTitle(R.string.app_name);
             switchContent(contentFragment, Files.ARG_ITEM_ID);
         } else {
+            Log.v(TAG, "Not Enough Clouds for functioning. Setting the content to Cloud List Fragment.");
             contentFragment = new CloudListFragment();
             setFragmentTitle(R.string.clouds);
             switchContent(contentFragment, CloudListFragment.ARG_ITEM_ID);

@@ -20,7 +20,6 @@ public class CloudSharedPref {
 
 	public CloudSharedPref(Context context) {
 		super();
-//		saveClouds(context, new ArrayList<CloudMeta>());
 	}
 
 	// These four methods are used for maintaining clouds meta data.
@@ -61,7 +60,7 @@ public class CloudSharedPref {
 	public ArrayList<CloudMeta> getClouds(Context context) {
 		Log.v(TAG, "CloudSharedPref: getClouds");
 		SharedPreferences settings;
-		List<CloudMeta> clouds;
+		List<CloudMeta> clouds = new ArrayList<>();
 
 		settings = context.getSharedPreferences(PREFS_NAME,
 				Context.MODE_PRIVATE);
@@ -73,10 +72,10 @@ public class CloudSharedPref {
 					CloudMeta[].class);
 
 			clouds = Arrays.asList(cloudArray);
-			clouds = new ArrayList<CloudMeta>(clouds);
+			clouds = new ArrayList<>(clouds);
 		} else {
-            Log.i(TAG, "preferences don't contain CloudsMetaData");
-            return null;
+            Log.i(TAG, "preferences don't contain CloudsMetaData. Creating the new preference.");
+			saveClouds(context, clouds);
         }
 
 		return (ArrayList<CloudMeta>) clouds;
