@@ -12,30 +12,33 @@
             />
     </PreferenceScreen>
 
-    <!--<MultiSelectListPreference-->
-        <!--android:dialogTitle="Clouds in Danger"-->
-        <!--android:key="endangered"-->
-        <!--android:summary=""-->
-        <!--android:title="Clouds in Danger"-->
-        <!--android:entries="@array/cloud_numbers"-->
-        <!--android:entryValues="@array/cloud_numbers"-->
-        <!--android:defaultValue="@array/empty_array"-->
-        <!--/>-->
-
-
+    <ListPreference
+        android:key="endangered_list"
+        android:title="Endangered Clouds"
+        android:summary="Set no. of clouds in danger"
+        android:entries="@array/endangered_string"
+        android:entryValues="@array/endangered_numbers" />
 
     <PreferenceScreen
         android:key="second_preferencescreen"
-        android:title="WiFi settings">
+        android:title="Proxy settings">
         <CheckBoxPreference
-            android:key="prefer wifi"
-            android:title="Prefer WiFi" />
+            android:key="use_proxy"
+            android:title="Use Proxy"
+            android:defaultValue="false" />
+        <EditTextPreference
+            android:key="proxy_hostname"
+            android:title="Hostname"
+            android:summary="Set proxy hostname"
+            android:dialogTitle="Proxy Hostname" />
+        <EditTextPreference
+            android:key="proxy_port"
+            android:title="Port"
+            android:summary="Set proxy port number"
+            android:dialogTitle="Proxy Port" />
     </PreferenceScreen>
-    <PreferenceScreen
-        android:key="cloud"
-        android:title="Add Clouds">
-        <Preference
-            android:key="adding"
-            android:title="Add"/>
-    </PreferenceScreen>
+
+    <Preference
+        android:title="About"
+        android:key="about" />
 </PreferenceScreen>

@@ -35,27 +35,6 @@ public class SettingsActivity extends PreferenceActivity implements SharedPrefer
                 .commit();
         sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
         sharedPref.registerOnSharedPreferenceChangeListener(this);
-
-//        addPreferencesFromResource(R.xml.preferences);
-//        for(int x = 0; x < getPreferenceScreen().getPreferenceCount(); x++){
-//            PreferenceCategory lol = (PreferenceCategory) getPreferenceScreen().getPreference(x);
-//            for(int y = 0; y < lol.getPreferenceCount(); y++){
-//                Preference pref = lol.getPreference(y);
-//                pref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener(){
-//
-//                    @Override
-//                    public boolean onPreferenceClick(Preference preference) {
-//                        if(preference.getKey()=="test_adding")
-//                        {
-//                            Intent testIntent = new Intent(getApplicationContext(), AddCloud.class);
-//                            startActivity(testIntent);
-//                        }
-//                        return false;
-//                    }
-//
-//                });
-//            }
-//        }
     }
 
     @Override
@@ -82,9 +61,13 @@ public class SettingsActivity extends PreferenceActivity implements SharedPrefer
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         Log.v(TAG, "SettingsActivity : onSharedPreferenceChanged : " + key);
         if (key.equals("adding")) {
-            Toast.makeText(this, "add cloud clicked", Toast.LENGTH_LONG).show();
+//            Toast.makeText(this, "add cloud clicked", Toast.LENGTH_LONG).show();
             Intent testIntent = new Intent(getApplicationContext(), AddCloud.class);
             startActivity(testIntent);
+        }
+        else if(key.equals("endangered_list")) {
+            Toast.makeText(this, "Old Value", Toast.LENGTH_SHORT).show();
+//            sharedPreferences.
         }
     }
 

@@ -598,7 +598,7 @@ public class VaultClient extends Service {
     * An extension of Binder class used to bind to this class.
     * */
     public class ClientBinder extends Binder {
-        VaultClient getService() {
+        public VaultClient getService() {
             return VaultClient.this;
         }
     }

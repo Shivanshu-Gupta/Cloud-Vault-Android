@@ -5,7 +5,20 @@
         <item>FolderCloud</item>
     </string-array>
 
-    <integer-array name="cloud_numbers">
+    <string-array name="endangered_string">
+        <item>No Cloud</item>
+        <item>1 Cloud</item>
+        <item>2 Clouds</item>
+        <item>3 Clouds</item>
+        <item>4 Clouds</item>
+        <item>5 Clouds</item>
+        <item>6 Clouds</item>
+        <item>7 Clouds</item>
+        <item>8 Clouds</item>
+    </string-array>
+
+    <integer-array name="endangered_numbers">
+        <item>0</item>
         <item>1</item>
         <item>2</item>
         <item>3</item>
@@ -16,6 +29,6 @@
         <item>8</item>
     </integer-array>
 
-    <integer-array name="empty_array">
-    </integer-array>
+    <string-array name="empty_array">
+    </string-array>
 </resources>

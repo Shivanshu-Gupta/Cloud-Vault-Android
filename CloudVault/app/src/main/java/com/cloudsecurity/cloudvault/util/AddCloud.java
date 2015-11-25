@@ -33,10 +33,29 @@ public class AddCloud extends AppCompatActivity {
     private Fragment contentFragment;
     private IntentFilter filter = null;
 
+    VaultClient client;
+    boolean mBound;
+    private ServiceConnection mConnection;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.v(TAG, "AddCloud : onCreate");
         super.onCreate(savedInstanceState);
+
+        mConnection = new ServiceConnection() {
+            @Override
+            public void onServiceConnected(ComponentName className,
+                                           IBinder service) {
+                VaultClient.ClientBinder binder = (VaultClient.ClientBinder) service;
+                client = binder.getService();
+                mBound = true;
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName arg0) {
+                mBound = false;
+            }
+        };
         setContentView(R.layout.activity_cloud_vault);
         contentFragment = new CloudListFragment();
         setFragmentTitle(R.string.clouds);
