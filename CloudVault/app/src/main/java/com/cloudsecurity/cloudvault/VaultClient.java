@@ -150,83 +150,20 @@ public class VaultClient extends Service {
 
     public void upload(File file) {
         Log.v(TAG, "VaultClient : upload : " + file);
-        String uploadPath = "";
-        String cloudFilePath;
-        String localFileName = file.getName();
-
-        //currently as only single files are being uploaded directly to the root directory, uploadPath will be empty.
-        if (uploadPath.length() > 0) {
-            cloudFilePath = uploadPath + "/" + localFileName;
-        } else {
-            cloudFilePath = localFileName;
-        }
-
-        //change the '/' in the cloudFilePath to '$'
-        //no effect as of now as only one level in the paths as of now.
-        cloudFilePath = (new PathManip(cloudFilePath)).toCloudFormat();
-
-        long fileSize = file.length();
-
-        downloadTable();
-
-        ContentValues newFile = new ContentValues(2);
-        newFile.put(DatabaseHelper.FILENAME, cloudFilePath);
-        newFile.put(DatabaseHelper.SIZE, fileSize);
-        insertTask = new InsertTask();
-        insertTask.execute(newFile);
-
-        UploadTask uploadFile = new UploadTask(file, cloudFilePath);
-        uploadFile.execute(this);
+        UploadTask uploadTask = new UploadTask(file);
+        uploadTask.execute(this);
     }
 
     public void download(String cloudFilePath) {
         Log.v(TAG, "VaultClient : download : " + cloudFilePath);
-        String writePath;
-        long fileSize;
-        String[] cols = new String[]{"ROWID AS _id",
-                DatabaseHelper.FILENAME,
-                DatabaseHelper.SIZE};
-        Cursor cursor = db.getReadableDatabase().query(true, DatabaseHelper.TABLE, cols
-                , DatabaseHelper.FILENAME + "=?",
-                new String[]{cloudFilePath},
-                null, null, null, null);
-
-        if (cursor != null && cursor.moveToFirst() && cursor.getCount() > 0) {
-            //check if need to add a '/'
-//            writePath = DOWNLOADS_DIR + '/' + cloudFilePath;
-            writePath = DOWNLOADS_DIR + "/SURA/" + cloudFilePath;                   //temporarily
-
-            String fileName = cursor.getString(cursor.getColumnIndex(DatabaseHelper.FILENAME));
-            fileSize = cursor.getLong(cursor.getColumnIndex(DatabaseHelper.SIZE));
-            cloudFilePath = (new PathManip(cloudFilePath)).toCloudFormat();
-            DownloadTask downloadFile = new DownloadTask(cloudFilePath, writePath, fileSize);
-            downloadFile.execute(this);
-        } else {
-            Log.e(TAG, "File not found in the database : " + cloudFilePath);
-        }
+        DownloadTask downloadTask = new DownloadTask(cloudFilePath);
+        downloadTask.execute(this);
     }
 
     public void delete(String cloudFilePath) {
         Log.v(TAG, "VaultClient : delete : " + cloudFilePath);
-        String[] cols = new String[]{"ROWID AS _id",
-                DatabaseHelper.FILENAME,
-                DatabaseHelper.SIZE};
-        Cursor cursor = db.getReadableDatabase().query(true, DatabaseHelper.TABLE, cols
-                , DatabaseHelper.FILENAME + "=?",
-                new String[]{cloudFilePath},
-                null, null, null, null);
-
-        if (cursor != null && cursor.moveToFirst() && cursor.getCount() > 0) {
-            String fileName = cursor.getString(cursor.getColumnIndex(DatabaseHelper.FILENAME));
-            long fileSize = cursor.getLong(cursor.getColumnIndex(DatabaseHelper.SIZE));
-            cloudFilePath = (new PathManip(cloudFilePath)).toCloudFormat();
-            DeleteTask deleteFile = new DeleteTask(cloudFilePath, fileSize);
-            deleteFile.execute(this);
-            removeTask = new RemoveTask();
-            removeTask.execute(cloudFilePath);
-        } else {
-            Log.e(TAG, "File not found in the database : " + cloudFilePath);
-        }
+        DeleteTask deleteTask = new DeleteTask(cloudFilePath);
+        deleteTask.execute(this);
     }
 
     @Override
@@ -237,173 +174,256 @@ public class VaultClient extends Service {
 
     private class UploadTask extends AsyncTask<Context, Void, Void> {
         File file;
-        String cloudFilePath;
 
-        public UploadTask(File file, String cloudFilePath) {
+        public UploadTask(File file) {
             this.file = file;
-            this.cloudFilePath = cloudFilePath;
         }
 
         @Override
         protected Void doInBackground(Context... params) {
             Context context = params[0];
-            try {
-                byte[] data = readFileToByteArray(file);
-                long fileSize = data.length;
-                Log.i(TAG, "VaultClient : UploadTask : " + file.getPath());
-                Pair<FECParameters, Integer> fecparams = getParams(fileSize);
-                FECParameters fecParams = fecparams.first;
-                int symSize = fecParams.symbolSize();
-                int blockSize = (int) Math.ceil((float) fileSize / (float) fecParams.numberOfSourceBlocks());
-                int k = (int) Math.ceil((float) blockSize / (float) symSize);
-                int r = fecparams.second;
+            String uploadPath = "";
+            String cloudFilePath;
+            String localFileName = file.getName();
 
-
-                Log.v(TAG,"VaultClient : getParams : symSize : " + symSize);
-                Log.v(TAG,"VaultClient : getParams : k : " + k);
-                Log.v(TAG,"VaultClient : getParams : r : " + r);
-
-                ArrayDataEncoder dataEncoder = OpenRQ.newEncoder(data, fecParams);
-
-                int packetID = 0, blockID = 0;
-                byte[] packetdata;
-                Iterable<SourceBlockEncoder> srcBlkEncoders = dataEncoder
-                        .sourceBlockIterable();
-                String blockFileName;
-                for (SourceBlockEncoder srcBlkEnc : srcBlkEncoders) {
-                    blockFileName = cloudFilePath + "_" + blockID;
-                    ArrayList<ByteArrayOutputStream> dataArrays = new ArrayList<>(
-                            cloudNum);
-
-                    for (int i = 0; i < cloudNum; i++) {
-                        int blockDataLength = (k + r) * (symSize + 8);
-                        dataArrays.add(new ByteArrayOutputStream(blockDataLength) {
-                        });
-                    }
-
-                    // using only repair packets and no source packets
-                    Iterable<EncodingPacket> repPackets = srcBlkEnc
-                            .repairPacketsIterable(k + r);
-                    for (EncodingPacket repPack : repPackets) {
-                        packetdata = repPack.asArray();
-                        int cloudID = packetID % cloudNum;
-                        dataArrays.get(cloudID).write(packetdata, 0, packetdata.length);
-                        packetID++;
-                    }
-
-                    int cloudID = 0;
-                    for(Cloud cloud: clouds) {
-                        cloud.upload(context, blockFileName, dataArrays.get(cloudID).toByteArray());
-                        cloudID++;
-                    }
-                    blockID++;
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "Exception in uploading File " + cloudFilePath, e);
-                e.printStackTrace();
+            //currently as only single files are being uploaded directly to the root directory, uploadPath will be empty.
+            if (uploadPath.length() > 0) {
+                cloudFilePath = uploadPath + "/" + localFileName;
+            } else {
+                cloudFilePath = localFileName;
             }
+
+            //change the '/' in the cloudFilePath to '$'
+            //no effect as of now as only one level in the paths as of now.
+            cloudFilePath = (new PathManip(cloudFilePath)).toCloudFormat();
+
+            long fileSize = file.length();
+
+            downloadTable(context);
+
+            ContentValues newFile = new ContentValues(2);
+            newFile.put(DatabaseHelper.FILENAME, cloudFilePath);
+            newFile.put(DatabaseHelper.SIZE, fileSize);
+//            insertTask = new InsertTask();
+//            insertTask.execute(newFile);
+            insertRecord(newFile);
+
+            uploadFile(context, file, cloudFilePath);
+            uploadTable(context);
             return null;
+        }
+    }
+
+    private void uploadFile(Context context, File file, String cloudFilePath) {
+        try {
+            byte[] data = readFileToByteArray(file);
+            long fileSize = data.length;
+            Log.i(TAG, "VaultClient : UploadTask : " + file.getPath());
+            Pair<FECParameters, Integer> fecparams = getParams(fileSize);
+            FECParameters fecParams = fecparams.first;
+            int symSize = fecParams.symbolSize();
+            int blockSize = (int) Math.ceil((float) fileSize / (float) fecParams.numberOfSourceBlocks());
+            int k = (int) Math.ceil((float) blockSize / (float) symSize);
+            int r = fecparams.second;
+
+
+            Log.v(TAG,"VaultClient : getParams : symSize : " + symSize);
+            Log.v(TAG,"VaultClient : getParams : k : " + k);
+            Log.v(TAG,"VaultClient : getParams : r : " + r);
+
+            ArrayDataEncoder dataEncoder = OpenRQ.newEncoder(data, fecParams);
+
+            int packetID = 0, blockID = 0;
+            byte[] packetdata;
+            Iterable<SourceBlockEncoder> srcBlkEncoders = dataEncoder
+                    .sourceBlockIterable();
+            String blockFileName;
+            for (SourceBlockEncoder srcBlkEnc : srcBlkEncoders) {
+                blockFileName = cloudFilePath + "_" + blockID;
+                ArrayList<ByteArrayOutputStream> dataArrays = new ArrayList<>(
+                        cloudNum);
+
+                for (int i = 0; i < cloudNum; i++) {
+                    int blockDataLength = (k + r) * (symSize + 8);
+                    dataArrays.add(new ByteArrayOutputStream(blockDataLength) {
+                    });
+                }
+
+                // using only repair packets and no source packets
+                Iterable<EncodingPacket> repPackets = srcBlkEnc
+                        .repairPacketsIterable(k + r);
+                for (EncodingPacket repPack : repPackets) {
+                    packetdata = repPack.asArray();
+                    int cloudID = packetID % cloudNum;
+                    dataArrays.get(cloudID).write(packetdata, 0, packetdata.length);
+                    packetID++;
+                }
+
+                int cloudID = 0;
+                for(Cloud cloud : clouds) {
+                    cloud.upload(context, blockFileName, dataArrays.get(cloudID).toByteArray());
+                    cloudID++;
+                }
+                blockID++;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Exception in uploading File " + cloudFilePath, e);
+            e.printStackTrace();
         }
     }
 
     private class DownloadTask extends AsyncTask<Context, Void, Void> {
-        Long fileSize;
         String cloudFilePath;
-        String writePath;
 
-        public DownloadTask(String cloudFilePath, String writePath, long fileSize) {
+        public DownloadTask(String cloudFilePath) {
             this.cloudFilePath = cloudFilePath;
-            this.writePath = writePath;
-            this.fileSize = fileSize;
         }
 
         @Override
         protected Void doInBackground(Context... params) {
             Context context = params[0];
-            Pair<FECParameters, Integer> fecparams = getParams(fileSize);
-            FECParameters fecParams = fecparams.first;
-            int symSize = fecParams.symbolSize();
-            int blockID = 0, blockCount = fecParams.numberOfSourceBlocks();
-            int packetID, packetCount;
-            int packetlength = symSize + 8;
-            String blockFileName;
-            try {
-                ArrayList<byte[]> blocksData = new ArrayList<>();
-                byte[] packetdata;
-                ArrayDataDecoder dataDecoder = OpenRQ.newDecoder(fecParams, 3);
+            String writePath;
+            long fileSize;
+            downloadTable(context);
+            String[] cols = new String[]{"ROWID AS _id",
+                    DatabaseHelper.FILENAME,
+                    DatabaseHelper.SIZE};
+            Cursor cursor = db.getReadableDatabase().query(true, DatabaseHelper.TABLE, cols
+                    , DatabaseHelper.FILENAME + "=?",
+                    new String[]{cloudFilePath},
+                    null, null, null, null);
 
-                // reading in all the packets into a byte[][]
-                List<byte[]> packetList = new ArrayList<>();
-                while (blockID < blockCount) {
-                    blockFileName = cloudFilePath + "_" + blockID;
-                    for(Cloud cloud : clouds) {
-                        blocksData.add(cloud.download(context, blockFileName));
-                    }
-                    for (byte[] blockData : blocksData) {
-                        packetCount = blockData.length / packetlength;
-                        for (int j = 0; j < packetCount; j++) {
-                            packetdata = Arrays.copyOfRange(blockData, j
-                                    * packetlength, (j + 1) * packetlength);
-                            packetList.add(packetdata);
-                        }
-                    }
+            if (cursor != null && cursor.moveToFirst() && cursor.getCount() > 0) {
+                //check if need to add a '/'
+//            writePath = DOWNLOADS_DIR + '/' + cloudFilePath;
+                writePath = DOWNLOADS_DIR + "/SURA/" + cloudFilePath;                   //temporarily
 
-                    blockID++;
-                }
-                Log.i(TAG, "packets have been downloaded!");
-                packetID = 0;
-                while (!dataDecoder.isDataDecoded() && packetID < packetList.size()) {
-                    byte[] packet = packetList.get(packetID);
-                    EncodingPacket encPack = dataDecoder.parsePacket(packet, true)
-                            .value();
-                    int sbn = encPack.sourceBlockNumber();
-                    SourceBlockDecoder srcBlkDec = dataDecoder.sourceBlock(sbn);
-                    srcBlkDec.putEncodingPacket(encPack);
-                    packetID++;
-                }
-
-                byte dataNew[] = dataDecoder.dataArray();
-                FileOutputStream fos = new FileOutputStream(writePath);
-                fos.write(dataNew);
-            } catch (Exception e) {
-                Log.e(TAG, "Exception in downloading " + writePath, e);
+                String fileName = cursor.getString(cursor.getColumnIndex(DatabaseHelper.FILENAME));
+                fileSize = cursor.getLong(cursor.getColumnIndex(DatabaseHelper.SIZE));
+                cloudFilePath = (new PathManip(cloudFilePath)).toCloudFormat();
+                downloadFile(context, cloudFilePath, writePath, fileSize);
+            } else {
+                //may happen that the file is not there in the db as it's is being downloaded fresh
+                //TODO : tell the user that the file wasn't found.
+                Log.e(TAG, "File not found in the database : " + cloudFilePath);
+            }
+            if(cursor!=null) {
+                cursor.close();
             }
             return null;
         }
     }
 
+    private void downloadFile(Context context, String cloudFilePath, String writePath, long fileSize) {
+        Pair<FECParameters, Integer> fecparams = getParams(fileSize);
+        FECParameters fecParams = fecparams.first;
+        int symSize = fecParams.symbolSize();
+        int blockID = 0, blockCount = fecParams.numberOfSourceBlocks();
+        int packetID, packetCount;
+        int packetlength = symSize + 8;
+        String blockFileName;
+        try {
+            ArrayList<byte[]> blocksData = new ArrayList<>();
+            byte[] packetdata;
+            ArrayDataDecoder dataDecoder = OpenRQ.newDecoder(fecParams, 3);
+
+            // reading in all the packets into a byte[][]
+            List<byte[]> packetList = new ArrayList<>();
+            while (blockID < blockCount) {
+                blockFileName = cloudFilePath + "_" + blockID;
+                for(Cloud cloud : clouds) {
+                    blocksData.add(cloud.download(context, blockFileName));
+                }
+                for (byte[] blockData : blocksData) {
+                    packetCount = blockData.length / packetlength;
+                    for (int j = 0; j < packetCount; j++) {
+                        packetdata = Arrays.copyOfRange(blockData, j
+                                * packetlength, (j + 1) * packetlength);
+                        packetList.add(packetdata);
+                    }
+                }
+
+                blockID++;
+            }
+            Log.i(TAG, "packets have been downloaded!");
+            packetID = 0;
+            while (!dataDecoder.isDataDecoded() && packetID < packetList.size()) {
+                byte[] packet = packetList.get(packetID);
+                EncodingPacket encPack = dataDecoder.parsePacket(packet, true)
+                        .value();
+                int sbn = encPack.sourceBlockNumber();
+                SourceBlockDecoder srcBlkDec = dataDecoder.sourceBlock(sbn);
+                srcBlkDec.putEncodingPacket(encPack);
+                packetID++;
+            }
+
+            byte dataNew[] = dataDecoder.dataArray();
+            FileOutputStream fos = new FileOutputStream(writePath);
+            fos.write(dataNew);
+        } catch (Exception e) {
+            Log.e(TAG, "Exception in downloading " + writePath, e);
+        }
+    }
     private class DeleteTask extends AsyncTask<Context, Void, Void> {
-        Long fileSize;
         String cloudFilePath;
 
-        public DeleteTask(String cloudFilePath, long fileSize) {
-            this.fileSize = fileSize;
+        public DeleteTask(String cloudFilePath) {
             this.cloudFilePath = cloudFilePath;
         }
 
         @Override
         protected Void doInBackground(Context... params) {
             Context context = params[0];
-            Pair<FECParameters, Integer> fecparams = getParams(fileSize);
-            FECParameters fecParams = fecparams.first;
-            int blockID = 0, blockCount = fecParams.numberOfSourceBlocks();
-            String blockFileName;
-            try {
-                while (blockID < blockCount) {
-                    blockFileName = cloudFilePath + "_" + blockID;
-                    for(Cloud cloud : clouds) {
-                        cloud.delete(context, blockFileName);
-                    }
-                    blockID++;
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "Exception in deleting " + cloudFilePath, e);
+            downloadTable(context);
+            String[] cols = new String[]{"ROWID AS _id",
+                    DatabaseHelper.FILENAME,
+                    DatabaseHelper.SIZE};
+            Cursor cursor = db.getReadableDatabase().query(true, DatabaseHelper.TABLE, cols
+                    , DatabaseHelper.FILENAME + "=?",
+                    new String[]{cloudFilePath},
+                    null, null, null, null);
+
+            if (cursor != null && cursor.moveToFirst() && cursor.getCount() > 0) {
+                String fileName = cursor.getString(cursor.getColumnIndex(DatabaseHelper.FILENAME));
+                long fileSize = cursor.getLong(cursor.getColumnIndex(DatabaseHelper.SIZE));
+                cloudFilePath = (new PathManip(cloudFilePath)).toCloudFormat();
+//                removeTask = new RemoveTask();
+//                removeTask.execute(cloudFilePath);
+                removeRecord(cloudFilePath);
+
+                deleteFile(context, cloudFilePath, fileSize);
+                uploadTable(context);
+            } else {
+                Log.e(TAG, "File not found in the database : " + cloudFilePath);
+            }
+            if (cursor != null) {
+                cursor.close();
             }
             return null;
         }
     }
 
-    private void uploadTable() {
+    private void deleteFile(Context context, String cloudFilePath, long fileSize) {
+        Pair<FECParameters, Integer> fecparams = getParams(fileSize);
+        FECParameters fecParams = fecparams.first;
+        int blockID = 0, blockCount = fecParams.numberOfSourceBlocks();
+        String blockFileName;
+        try {
+            while (blockID < blockCount) {
+                blockFileName = cloudFilePath + "_" + blockID;
+                for(Cloud cloud : clouds) {
+                    cloud.delete(context, blockFileName);
+                }
+                blockID++;
+            }
+        } catch (Exception e) {
+            //may happen that the file is not there in the db as it's is being downloaded fresh
+            //TODO : tell the user that the file wasn't found.
+            Log.e(TAG, "Exception in deleting " + cloudFilePath, e);
+        }
+    }
+
+    private void uploadTable(Context context) {
         Log.v(TAG, "VaultClient : uploadTAble");
         byte[] dbData;
         String DB_NAME = DatabaseHelper.DATABASE_NAME, DB_PATH;
@@ -435,12 +455,12 @@ public class VaultClient extends Service {
             dos.writeInt(dbSize);
             byte[] dbMetaData = bos.toByteArray();
 
-            TinyUploadTask dbMetaUpload = new TinyUploadTask(dbMetaData, DB_META);
-            dbMetaUpload.execute();
+            updateDBMetaFile(dbHash, dbSize);
+//            TinyUploadTask dbMetaUpload = new TinyUploadTask(dbMetaData, DB_META);
+//            dbMetaUpload.execute();
+            tinyUploadFile(context, dbMetaData, DB_META);
 
-            UploadTask dbUpload = new UploadTask(new File(DB_PATH), DB_NAME);
-            dbUpload.execute();
-
+            uploadFile(context, new File(DB_PATH), DB_NAME);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
             Log.e(TAG, "VaultClient : uploadTable : database file not found");
@@ -452,7 +472,7 @@ public class VaultClient extends Service {
         }
     }
 
-    private void downloadTable() {
+    private void downloadTable(Context context) {
         Log.v(TAG, "VaultClient : downloadTable");
         boolean databaseChanged = false;
         //MD5 hashes are 128 bit or 16 bytes long
@@ -469,8 +489,9 @@ public class VaultClient extends Service {
             Log.e(TAG, "VaultClient : downloadTable : could not get local db meta");
             localDBSize = -1;
         }
-        TinyDownloadTask dbMetaDownload = new TinyDownloadTask(DB_META, DB_META_PATH);
-        dbMetaDownload.execute(this);
+//        TinyDownloadTask dbMetaDownload = new TinyDownloadTask(DB_META, DB_META_PATH);
+//        dbMetaDownload.execute(this);
+        tinyDownloadFile(context, DB_META, DB_META_PATH);
         try {
             DataInputStream in = new DataInputStream(new FileInputStream(
                     DB_META_PATH));
@@ -481,9 +502,9 @@ public class VaultClient extends Service {
             }
             int downloadedDBSize = in.readInt();
             Log.i(TAG, "VaultClient : downloadTable : Local Files DB: Size=" + localDBSize + " Hash="
-                    + localDBHash);
+                    + Arrays.toString(localDBHash));
             Log.i(TAG, "VaultClient : downloadTable : Files DB on cloud: Size=" + downloadedDBSize + " Hash="
-                    + downloadedDBHash);
+                    + Arrays.toString(downloadedDBHash));
             if (databaseChanged) {
                 String DB_NAME = DatabaseHelper.DATABASE_NAME, DB_PATH;
                 if(android.os.Build.VERSION.SDK_INT >= 17){
@@ -493,8 +514,7 @@ public class VaultClient extends Service {
                     DB_PATH = this.getFilesDir() + this.getPackageName() + "/databases/" + DB_NAME;
                 }
                 Log.v(TAG, "table hash mismatch. downloading database.");
-                DownloadTask dbDownload = new DownloadTask(DB_NAME, DB_PATH, downloadedDBSize);
-                dbDownload.execute();
+                downloadFile(context, DB_NAME, DB_PATH, downloadedDBSize);
             }
             in.close();
         } catch (IOException e) {
@@ -524,73 +544,115 @@ public class VaultClient extends Service {
         return true;
     }
 
-    private class TinyUploadTask extends AsyncTask<Context, Void, Void> {
-        byte[] data;
-        String cloudFilePath;
+//    private class TinyUploadTask extends AsyncTask<Context, Void, Void> {
+//        byte[] data;
+//        String cloudFilePath;
+//
+//        public TinyUploadTask(byte[] data, String cloudFilePath) {
+//            this.data = data;
+//            this.cloudFilePath = cloudFilePath;
+//        }
+//
+//        @Override
+//        protected Void doInBackground(Context... params) {
+//            Context context = params[0];
+//            try {
+//                long fileSize = data.length;
+//                Log.i(TAG, "VaultClient : TinyUploadTask : " + cloudFilePath);
+//                for(Cloud cloud: clouds) {
+//                    cloud.upload(context, cloudFilePath, data);
+//                }
+//            } catch (Exception e) {
+//                Log.e(TAG, "Exception in uploading File " + cloudFilePath, e);
+//                e.printStackTrace();
+//            }
+//            return null;
+//        }
+//    }
 
-        public TinyUploadTask(byte[] data, String cloudFilePath) {
-            this.data = data;
-            this.cloudFilePath = cloudFilePath;
-        }
-
-        @Override
-        protected Void doInBackground(Context... params) {
-            Context context = params[0];
-            try {
-                long fileSize = data.length;
-                Log.i(TAG, "VaultClient : TinyUploadTask : " + cloudFilePath);
-                for(Cloud cloud: clouds) {
-                    cloud.upload(context, cloudFilePath, data);
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "Exception in uploading File " + cloudFilePath, e);
-                e.printStackTrace();
+    private void tinyUploadFile(Context context, byte[] data, String cloudFilePath) {
+        try {
+            Log.i(TAG, "VaultClient : TinyUploadTask : " + cloudFilePath);
+            for(Cloud cloud: clouds) {
+                cloud.upload(context, cloudFilePath, data);
             }
-            return null;
+        } catch (Exception e) {
+            Log.e(TAG, "Exception in uploading File " + cloudFilePath, e);
+            e.printStackTrace();
         }
     }
 
-    private class TinyDownloadTask extends AsyncTask<Context, Void, Void> {
-        String cloudFilePath;
-        String writePath;
-
-        public TinyDownloadTask(String cloudFilePath, String writePath) {
-            this.cloudFilePath = cloudFilePath;
-            this.writePath = writePath;
-        }
-
-        @Override
-        protected Void doInBackground(Context... params) {
-            Context context = params[0];
-            FileOutputStream fos = null;
-            try {
-                fos = new FileOutputStream(writePath);
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-                Log.e(TAG, "VaultClient : TinyDownloadtask : unable to open file for writing");
-            }
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            for(Cloud cloud : clouds) {
-                try {
-                    bos.write(cloud.download(context, cloudFilePath));
-                } catch (IOException e) {
-                    bos.reset();
+//    private class TinyDownloadTask extends AsyncTask<Context, Void, Void> {
+//        String cloudFilePath;
+//        String writePath;
+//
+//        public TinyDownloadTask(String cloudFilePath, String writePath) {
+//            this.cloudFilePath = cloudFilePath;
+//            this.writePath = writePath;
+//        }
+//
+//        @Override
+//        protected Void doInBackground(Context... params) {
+//            Context context = params[0];
+//            FileOutputStream fos = null;
+//            try {
+//                fos = new FileOutputStream(writePath);
+//            } catch (FileNotFoundException e) {
+//                e.printStackTrace();
+//                Log.e(TAG, "VaultClient : TinyDownloadTask : unable to open file for writing");
+//            }
+//            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+//            for(Cloud cloud : clouds) {
+//                try {
+//                    bos.write(cloud.download(context, cloudFilePath));
+//                } catch (IOException e) {
+//                    bos.reset();
+////                    e.printStackTrace();
+//                }
+//            }
+//            //TODO : check if just checking the number of bytes written is enough
+//            if(bos.size() > 0 && fos != null) {
+//                try {
+//                    fos.write(bos.toByteArray());
+//                } catch (IOException e) {
 //                    e.printStackTrace();
-                }
-            }
-            //TODO : check if just checking the number of bytes written is enough
-            if(bos.size() > 0 && fos != null) {
-                try {
-                    fos.write(bos.toByteArray());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    Log.e(TAG, "VaultClient : TinyDownloadTask : unable to write file " + cloudFilePath);
-                }
-            } else {
-                Log.e(TAG, "VaultClient : TinyDOwnloadTask : couldn't download file " + cloudFilePath);
-            }
+//                    Log.e(TAG, "VaultClient : TinyDownloadTask : unable to write file " + cloudFilePath);
+//                }
+//            } else {
+//                Log.e(TAG, "VaultClient : TinyDOwnloadTask : couldn't download file " + cloudFilePath);
+//            }
+//
+//            return null;
+//        }
+//    }
 
-            return null;
+    private void tinyDownloadFile(Context context, String cloudFilePath, String writePath) {
+        FileOutputStream fos = null;
+        try {
+            fos = new FileOutputStream(writePath);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            Log.e(TAG, "VaultClient : TinyDownloadTask : unable to open file for writing");
+        }
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        for(Cloud cloud : clouds) {
+            try {
+                bos.write(cloud.download(context, cloudFilePath));
+            } catch (IOException e) {
+                bos.reset();
+//                    e.printStackTrace();
+            }
+        }
+        //TODO : check if just checking the number of bytes written is enough
+        if(bos.size() > 0 && fos != null) {
+            try {
+                fos.write(bos.toByteArray());
+            } catch (IOException e) {
+                e.printStackTrace();
+                Log.e(TAG, "VaultClient : TinyDownloadTask : unable to write file " + cloudFilePath);
+            }
+        } else {
+            Log.e(TAG, "VaultClient : TinyDownloadTask : couldn't download file " + cloudFilePath);
         }
     }
 
@@ -636,6 +698,13 @@ public class VaultClient extends Service {
         }
     }
 
+    private void insertRecord(ContentValues... values) {
+        database = db.getWritableDatabase();
+        database.insert(DatabaseHelper.TABLE, DatabaseHelper.FILENAME, values[0]);
+        Intent intent = new Intent(FILE_UPLOADED);
+        mLocalBroadcastManager.sendBroadcast(intent);
+    }
+
     private class RemoveTask extends BaseTask<String> {
         @Override
         public void onPostExecute(Cursor result) {
@@ -651,6 +720,12 @@ public class VaultClient extends Service {
                     new String[]{values[0]});
             return (doQuery());
         }
+    }
+
+    private void removeRecord(String... values) {
+        database = db.getWritableDatabase();
+        database.delete(DatabaseHelper.TABLE, DatabaseHelper.FILENAME + "=?",
+                new String[]{values[0]});
     }
 
     @Override

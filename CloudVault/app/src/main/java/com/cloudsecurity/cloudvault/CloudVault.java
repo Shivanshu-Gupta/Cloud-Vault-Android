@@ -109,6 +109,13 @@ public class CloudVault extends AppCompatActivity {
     protected void onStop() {
         Log.v(TAG, "CloudVault : onStop");
         super.onStop();
+
+    }
+
+    @Override
+    protected void onDestroy() {
+        Log.v(TAG, "CloudVault ; onDestroy");
+        super.onDestroy();
         Intent intent = new Intent(this, VaultClient.class);
         stopService(intent);
         // Unbind from the service
@@ -186,9 +193,4 @@ public class CloudVault extends AppCompatActivity {
         super.onRestart();
     }
 
-    @Override
-    protected void onDestroy() {
-        Log.v(TAG, "CloudVault ; onDestroy");
-        super.onDestroy();
-    }
 }
