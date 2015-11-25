@@ -2,7 +2,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.cloudsecurity.cloudvault.Files">
+    tools:context="com.cloudsecurity.cloudvault.util.SettingsActivity">
 
     <!-- TODO: Update blank fragment layout -->
 
@@ -16,25 +16,5 @@
         android:padding="10dp"
         android:scrollbarStyle="outsideOverlay"
         android:layout_above="@+id/upload_button" />
-
-    <Button
-        android:id="@+id/setting_button"
-        android:text="@string/settings"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentStart="true" />
-
-
-    <Button
-        android:id="@+id/upload_button"
-        android:text="@string/upload"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_above="@+id/setting_button"
-        android:layout_alignParentStart="true" />
-
-
-
 
 </RelativeLayout>
