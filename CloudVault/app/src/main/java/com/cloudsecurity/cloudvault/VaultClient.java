@@ -125,16 +125,22 @@ public class VaultClient extends Service {
 
     private Pair<FECParameters, Integer> getParams(long fileSize) {
         // epsilon
+        Log.v(TAG,"VaultClient : getParams : fileSize" + fileSize);
         int overHead = 4;
         int symSize = (int) Math.round(Math.sqrt((float) fileSize * 8
                 / (float) overHead)); // symbol header length = 8, T = sqrt(D * delta / epsilon)
-        int blockCount = (int) Math.ceil((float) fileSize / (float) 30000000);
+        int blockCount = (int) Math.ceil((float) fileSize / (float) 3000000);
         FECParameters fecParams = FECParameters.newParameters(fileSize,
                 symSize, blockCount);
-
+        if(fecParams == null)
+        {
+            Log.v(TAG,"VaultClient : getParams : ahhhm : This is not happening");
+        }
         int blockSize = (int) Math.ceil((float) fileSize / (float) fecParams.numberOfSourceBlocks());
         int k = (int) Math.ceil((float) blockSize / (float) symSize);
 
+        Log.v(TAG,"VaultClient : getParams : cloudDanger" + cloudDanger);
+        Log.v(TAG,"VaultClient : getParams : cloudNum" + cloudNum);
         float gamma = (float) cloudDanger / (float) cloudNum;
 
         int r = (int) Math.ceil((gamma * k + overHead) / (1 - gamma));
@@ -251,6 +257,11 @@ public class VaultClient extends Service {
                 int blockSize = (int) Math.ceil((float) fileSize / (float) fecParams.numberOfSourceBlocks());
                 int k = (int) Math.ceil((float) blockSize / (float) symSize);
                 int r = fecparams.second;
+
+
+                Log.v(TAG,"VaultClient : getParams : symSize : " + symSize);
+                Log.v(TAG,"VaultClient : getParams : k : " + k);
+                Log.v(TAG,"VaultClient : getParams : r : " + r);
 
                 ArrayDataEncoder dataEncoder = OpenRQ.newEncoder(data, fecParams);
 

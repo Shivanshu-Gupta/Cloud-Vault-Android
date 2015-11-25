@@ -31,6 +31,7 @@ import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.cloudsecurity.cloudvault.util.SettingsActivity;
 import com.ipaulpro.afilechooser.utils.FileUtils;
 
 import java.io.File;
@@ -50,6 +51,7 @@ public class Files extends ListFragment {
 
     //view elements
     private Button uploadButton;
+    private Button settingButton;
 
     private DatabaseHelper db = null;
     private AsyncTask task = null;
@@ -65,6 +67,7 @@ public class Files extends ListFragment {
 
     //intent request codes
     private static final int UPLOAD_REQUEST_CODE = 100; // onActivityResult request code
+    private static final int SETTING_REQUEST_CODE = 200; // onActivityResult request code
 
     public Files() {
         // Required empty public constructor
@@ -134,6 +137,17 @@ public class Files extends ListFragment {
                 showChooser();
             }
         });
+
+        settingButton = (Button) view.findViewById(R.id.setting_button);
+        settingButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.v(TAG, "Files : setting button clicked.");
+                showSettingPreferences();
+            }
+        });
+
+
         return view;
 
     }
@@ -213,6 +227,16 @@ public class Files extends ListFragment {
         }
     }
 
+    private void showSettingPreferences() {
+
+        Intent myIntent = new Intent (getActivity(),SettingsActivity.class);
+//        try {
+            startActivity(myIntent);
+//        } catch (ActivityNotFoundException e) {
+            // The reason for the existence of aFileChooser
+//        }
+    }
+
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         Log.v(TAG, "Files : onActivityResult");
@@ -238,6 +262,8 @@ public class Files extends ListFragment {
                     }
                 }
                 break;
+            case SETTING_REQUEST_CODE:
+                Toast.makeText(getActivity(),"Settings Done",Toast.LENGTH_LONG).show();
         }
         super.onActivityResult(requestCode, resultCode, data);
     }

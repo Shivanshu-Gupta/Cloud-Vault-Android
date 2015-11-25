@@ -1,0 +1,41 @@
+<!--<?xml version="1.0" encoding="utf-8"?>-->
+<PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:key="first_preferencescreen">
+    <PreferenceScreen
+        android:key="intentscreen"
+        android:title="Add More Clouds">
+        <intent
+            android:action="android.intent.action.MAIN"
+            android:targetPackage="com.cloudsecurity.cloudvault"
+            android:targetClass="com.cloudsecurity.cloudvault.util.AddCloud"
+            />
+    </PreferenceScreen>
+
+    <!--<MultiSelectListPreference-->
+        <!--android:dialogTitle="Clouds in Danger"-->
+        <!--android:key="endangered"-->
+        <!--android:summary=""-->
+        <!--android:title="Clouds in Danger"-->
+        <!--android:entries="@array/cloud_numbers"-->
+        <!--android:entryValues="@array/cloud_numbers"-->
+        <!--android:defaultValue="@array/empty_array"-->
+        <!--/>-->
+
+
+
+    <PreferenceScreen
+        android:key="second_preferencescreen"
+        android:title="WiFi settings">
+        <CheckBoxPreference
+            android:key="prefer wifi"
+            android:title="Prefer WiFi" />
+    </PreferenceScreen>
+    <PreferenceScreen
+        android:key="cloud"
+        android:title="Add Clouds">
+        <Preference
+            android:key="adding"
+            android:title="Add"/>
+    </PreferenceScreen>
+</PreferenceScreen>
