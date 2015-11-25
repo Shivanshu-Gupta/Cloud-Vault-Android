@@ -12,7 +12,7 @@ import android.hardware.SensorManager;
  */
 public class DatabaseHelper extends SQLiteOpenHelper{
     private static DatabaseHelper db;
-    private static final String DATABASE_NAME="vault.db";
+    public static final String DATABASE_NAME="vault.db";
     private static final int SCHEMA=1;
     static final String FILENAME="cloudFileName";
     static final String SIZE="size";
@@ -32,19 +32,19 @@ public class DatabaseHelper extends SQLiteOpenHelper{
     @Override
     public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE fileSizes (cloudFileName TEXT, size REAL)");
-        ContentValues cv=new ContentValues();
-
-        cv.put(FILENAME, "This");
-        cv.put(SIZE, 4);
-        db.insert(TABLE, FILENAME, cv);
-
-        cv.put(FILENAME, "is");
-        cv.put(SIZE, 2);
-        db.insert(TABLE, FILENAME, cv);
-
-        cv.put(FILENAME, "temporary");
-        cv.put(SIZE, 9);
-        db.insert(TABLE, FILENAME, cv);
+//        ContentValues cv=new ContentValues();
+//
+//        cv.put(FILENAME, "This");
+//        cv.put(SIZE, 4);
+//        db.insert(TABLE, FILENAME, cv);
+//
+//        cv.put(FILENAME, "is");
+//        cv.put(SIZE, 2);
+//        db.insert(TABLE, FILENAME, cv);
+//
+//        cv.put(FILENAME, "temporary");
+//        cv.put(SIZE, 9);
+//        db.insert(TABLE, FILENAME, cv);
     }
 
     @Override

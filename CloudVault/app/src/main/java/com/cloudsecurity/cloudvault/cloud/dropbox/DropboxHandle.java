@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.cloudsecurity.cloudvault.CloudVault;
 import com.cloudsecurity.cloudvault.cloud.Cloud;
 import com.cloudsecurity.cloudvault.cloud.CloudMeta;
 import com.dropbox.client2.DropboxAPI;
@@ -83,7 +84,6 @@ public class DropboxHandle implements Cloud {
                 InputStream is;
                 is = new ByteArrayInputStream(fileData);
 
-                Log.v(TAG, "file size: " + fileData.length);
                 DropboxAPI.UploadRequest mRequest = null;
                 setupApi();
                 if(mApi != null) {
@@ -140,9 +140,10 @@ public class DropboxHandle implements Cloud {
         } else {
             mErrorMsg = "No longer linked to the dropbox cloud";
         }
-        if(!mErrorMsg.isEmpty()) {
-            showToast(mErrorMsg);
-        }
+//        if(!mErrorMsg.isEmpty()) {
+//            showToast(mErrorMsg);
+//        }
+        Log.v(TAG, "DropboxHandle : upload : " + mErrorMsg);
         return false;
     }
 
@@ -200,8 +201,9 @@ public class DropboxHandle implements Cloud {
             // Unknown error
             mErrorMsg = "Unknown error.  Try again.";
         }
-        showToast(mErrorMsg);
-        return null;
+//        showToast(mErrorMsg);
+        Log.v(TAG, "DropboxHandle : download : " + mErrorMsg);
+        return new byte[0];
     }
 
     @Override
@@ -209,6 +211,7 @@ public class DropboxHandle implements Cloud {
         return false;
     }
 
+    //won't work here as it is not th UI thread
     private void showToast(String msg) {
         Toast error = Toast.makeText(mContext, msg, Toast.LENGTH_LONG);
         error.show();

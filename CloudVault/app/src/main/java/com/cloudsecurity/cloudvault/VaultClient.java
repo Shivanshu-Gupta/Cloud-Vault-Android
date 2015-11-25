@@ -31,9 +31,17 @@ import net.fec.openrq.decoder.SourceBlockDecoder;
 import net.fec.openrq.encoder.SourceBlockEncoder;
 import net.fec.openrq.parameters.FECParameters;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -52,9 +60,13 @@ public class VaultClient extends Service {
     public static final String FILE_UPLOADED = "com.cloudsecurity.cloudvault.action.FILE_UPLOADED";
     public static final String FILE_DELETED = "com.cloudsecurity.cloudvault.action.FILE_DELETED";
     public static final String DOWNLOADS_DIR = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getPath();
+
+    public static final String DB_META = "dbmeta.txt";
+    public static final String DB_META_PATH = Environment.getDownloadCacheDirectory().getPath() + "dbmeta.txt";
+
     private final IBinder mBinder = new ClientBinder();
-    int cloudNum = 1;
-    int cloudDanger = 0; // Cd
+    int cloudNum;
+    int cloudDanger = 1; // Cd
 
     private CloudSharedPref cloudSharedPref;
     private ArrayList<CloudMeta> cloudMetas = new ArrayList<>();
@@ -149,6 +161,8 @@ public class VaultClient extends Service {
 
         long fileSize = file.length();
 
+        downloadTable();
+
         ContentValues newFile = new ContentValues(2);
         newFile.put(DatabaseHelper.FILENAME, cloudFilePath);
         newFile.put(DatabaseHelper.SIZE, fileSize);
@@ -230,7 +244,7 @@ public class VaultClient extends Service {
             try {
                 byte[] data = readFileToByteArray(file);
                 long fileSize = data.length;
-                Log.i(TAG, "Uploading: " + file.getPath());
+                Log.i(TAG, "VaultClient : UploadTask : " + file.getPath());
                 Pair<FECParameters, Integer> fecparams = getParams(fileSize);
                 FECParameters fecParams = fecparams.first;
                 int symSize = fecParams.symbolSize();
@@ -374,6 +388,197 @@ public class VaultClient extends Service {
             } catch (Exception e) {
                 Log.e(TAG, "Exception in deleting " + cloudFilePath, e);
             }
+            return null;
+        }
+    }
+
+    private void uploadTable() {
+        Log.v(TAG, "VaultClient : uploadTAble");
+        byte[] dbData;
+        String DB_NAME = DatabaseHelper.DATABASE_NAME, DB_PATH;
+        if(android.os.Build.VERSION.SDK_INT >= 17){
+            DB_PATH = this.getApplicationInfo().dataDir + "/databases/" + DB_NAME;
+        }
+        else {
+            DB_PATH = this.getFilesDir() + this.getPackageName() + "/databases/" + DB_NAME;
+        }
+        try {
+            FileInputStream fis = new FileInputStream(DB_PATH);
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            byte[] buffer = new byte[1024];
+            int bytes_read;
+            while(-1 != (bytes_read = fis.read(buffer, 0, buffer.length))) {
+                bos.write(buffer, 0, bytes_read);
+            }
+            dbData = bos.toByteArray();
+            int dbSize = dbData.length;
+
+            //get the 128-bit MD5 hash
+            MessageDigest digester = MessageDigest.getInstance("MD5");
+            digester.update(dbData);
+            byte[] dbHash = digester.digest();      //16 bytes
+
+            bos.reset();
+            DataOutputStream dos = new DataOutputStream(bos);
+            dos.write(dbHash);
+            dos.writeInt(dbSize);
+            byte[] dbMetaData = bos.toByteArray();
+
+            TinyUploadTask dbMetaUpload = new TinyUploadTask(dbMetaData, DB_META);
+            dbMetaUpload.execute();
+
+            UploadTask dbUpload = new UploadTask(new File(DB_PATH), DB_NAME);
+            dbUpload.execute();
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            Log.e(TAG, "VaultClient : uploadTable : database file not found");
+        } catch (IOException e) {
+            e.printStackTrace();
+            Log.e(TAG, "VaultClient : uploadTable : database file could not be read");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void downloadTable() {
+        Log.v(TAG, "VaultClient : downloadTable");
+        boolean databaseChanged = false;
+        //MD5 hashes are 128 bit or 16 bytes long
+        byte[] localDBHash = new byte[16];
+        long localDBSize = -1;
+        try{
+            DataInputStream in = new DataInputStream((new FileInputStream(DB_META_PATH)));
+            in.read(localDBHash, 0, localDBHash.length);
+            localDBSize = in.readInt();
+            in.close();
+        } catch (IOException e) {
+            Log.w(TAG, "VaultClient : downloadTable : could not open existing dbMeta.txt: " + e.getLocalizedMessage());
+        } catch (Exception e) {
+            Log.e(TAG, "VaultClient : downloadTable : could not get local db meta");
+            localDBSize = -1;
+        }
+        TinyDownloadTask dbMetaDownload = new TinyDownloadTask(DB_META, DB_META_PATH);
+        dbMetaDownload.execute(this);
+        try {
+            DataInputStream in = new DataInputStream(new FileInputStream(
+                    DB_META_PATH));
+            byte[] downloadedDBHash = new byte[16];
+            in.read(downloadedDBHash, 0, downloadedDBHash.length);
+            if (localDBHash != downloadedDBHash || localDBSize == -1) {
+                databaseChanged = true;
+            }
+            int downloadedDBSize = in.readInt();
+            Log.i(TAG, "VaultClient : downloadTable : Local Files DB: Size=" + localDBSize + " Hash="
+                    + localDBHash);
+            Log.i(TAG, "VaultClient : downloadTable : Files DB on cloud: Size=" + downloadedDBSize + " Hash="
+                    + downloadedDBHash);
+            if (databaseChanged) {
+                String DB_NAME = DatabaseHelper.DATABASE_NAME, DB_PATH;
+                if(android.os.Build.VERSION.SDK_INT >= 17){
+                    DB_PATH = this.getApplicationInfo().dataDir + "/databases/" + DB_NAME;
+                }
+                else {
+                    DB_PATH = this.getFilesDir() + this.getPackageName() + "/databases/" + DB_NAME;
+                }
+                Log.v(TAG, "table hash mismatch. downloading database.");
+                DownloadTask dbDownload = new DownloadTask(DB_NAME, DB_PATH, downloadedDBSize);
+                dbDownload.execute();
+            }
+            in.close();
+        } catch (IOException e) {
+            Log.e(TAG, "IOException while downloading table. ");
+            e.printStackTrace();
+        }
+    }
+
+    boolean updateDBMetaFile(byte[] dbHash, int dbSize) {
+        try {
+            FileOutputStream fout = new FileOutputStream(DB_META_PATH);
+            DataOutputStream dout = new DataOutputStream(fout);
+            dout.write(dbHash);
+            dout.writeInt(dbSize);
+
+            dout.flush();
+            fout.flush();
+            dout.close();
+            fout.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            return false;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
+    private class TinyUploadTask extends AsyncTask<Context, Void, Void> {
+        byte[] data;
+        String cloudFilePath;
+
+        public TinyUploadTask(byte[] data, String cloudFilePath) {
+            this.data = data;
+            this.cloudFilePath = cloudFilePath;
+        }
+
+        @Override
+        protected Void doInBackground(Context... params) {
+            Context context = params[0];
+            try {
+                long fileSize = data.length;
+                Log.i(TAG, "VaultClient : TinyUploadTask : " + cloudFilePath);
+                for(Cloud cloud: clouds) {
+                    cloud.upload(context, cloudFilePath, data);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Exception in uploading File " + cloudFilePath, e);
+                e.printStackTrace();
+            }
+            return null;
+        }
+    }
+
+    private class TinyDownloadTask extends AsyncTask<Context, Void, Void> {
+        String cloudFilePath;
+        String writePath;
+
+        public TinyDownloadTask(String cloudFilePath, String writePath) {
+            this.cloudFilePath = cloudFilePath;
+            this.writePath = writePath;
+        }
+
+        @Override
+        protected Void doInBackground(Context... params) {
+            Context context = params[0];
+            FileOutputStream fos = null;
+            try {
+                fos = new FileOutputStream(writePath);
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+                Log.e(TAG, "VaultClient : TinyDownloadtask : unable to open file for writing");
+            }
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            for(Cloud cloud : clouds) {
+                try {
+                    bos.write(cloud.download(context, cloudFilePath));
+                } catch (IOException e) {
+                    bos.reset();
+//                    e.printStackTrace();
+                }
+            }
+            //TODO : check if just checking the number of bytes written is enough
+            if(bos.size() > 0 && fos != null) {
+                try {
+                    fos.write(bos.toByteArray());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    Log.e(TAG, "VaultClient : TinyDownloadTask : unable to write file " + cloudFilePath);
+                }
+            } else {
+                Log.e(TAG, "VaultClient : TinyDOwnloadTask : couldn't download file " + cloudFilePath);
+            }
+
             return null;
         }
     }
