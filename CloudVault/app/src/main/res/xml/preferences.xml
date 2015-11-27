@@ -17,7 +17,9 @@
         android:title="Endangered Clouds"
         android:summary="Set no. of clouds in danger"
         android:entries="@array/endangered_string"
-        android:entryValues="@array/endangered_numbers" />
+        android:entryValues="@array/endangered_numbers"
+        android:defaultValue="1"
+        />
 
     <PreferenceScreen
         android:key="second_preferencescreen"

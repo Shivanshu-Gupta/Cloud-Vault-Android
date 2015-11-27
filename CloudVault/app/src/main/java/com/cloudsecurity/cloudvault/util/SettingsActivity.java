@@ -22,7 +22,6 @@ import java.util.List;
 public class SettingsActivity extends PreferenceActivity implements SharedPreferences.OnSharedPreferenceChangeListener {
     private static final String TAG = "CloudVault";
     SharedPreferences sharedPref;
-    PreferenceScreen myScreen;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,8 +65,10 @@ public class SettingsActivity extends PreferenceActivity implements SharedPrefer
             startActivity(testIntent);
         }
         else if(key.equals("endangered_list")) {
-            Toast.makeText(this, "Old Value", Toast.LENGTH_SHORT).show();
-//            sharedPreferences.
+            String selectedFont=sharedPreferences.getString("endangered_list",null);
+//            if("Very small text".equalsIgnoreCase(selectedFont)) {
+                Toast.makeText(getApplicationContext(),selectedFont + ":",Toast.LENGTH_SHORT).show();
+//            }
         }
     }
 

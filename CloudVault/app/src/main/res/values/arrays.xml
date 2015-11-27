@@ -17,7 +17,7 @@
         <item>8 Clouds</item>
     </string-array>
 
-    <integer-array name="endangered_numbers">
+    <string-array name="endangered_numbers">
         <item>0</item>
         <item>1</item>
         <item>2</item>
@@ -27,7 +27,7 @@
         <item>6</item>
         <item>7</item>
         <item>8</item>
-    </integer-array>
+    </string-array>
 
     <string-array name="empty_array">
     </string-array>
