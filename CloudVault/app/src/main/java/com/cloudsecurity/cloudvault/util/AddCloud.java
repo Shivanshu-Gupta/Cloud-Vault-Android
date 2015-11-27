@@ -28,8 +28,13 @@ import com.cloudsecurity.cloudvault.dropbox.Dropbox;
  */
 
 
-public class AddCloud extends AppCompatActivity {
+public class AddCloud extends AppCompatActivity implements CloudListFragment.OnFragmentInteractionListener {
     private static final String TAG = "CloudVault";
+
+    VaultClient client;
+    boolean mBound;
+    private ServiceConnection mConnection;
+
     private Fragment contentFragment;
     private IntentFilter filter = null;
 
@@ -44,12 +49,31 @@ public class AddCloud extends AppCompatActivity {
         switchContent(contentFragment, CloudListFragment.ARG_ITEM_ID);
 //        filter = new IntentFilter(Dropbox.LOGGED_IN);
 //        filter.addAction(Dropbox.LOGGED_OUT);
+        mConnection = new ServiceConnection() {
+
+            @Override
+            public void onServiceConnected(ComponentName className,
+                                           IBinder service) {
+                VaultClient.ClientBinder binder = (VaultClient.ClientBinder) service;
+                client = binder.getService();
+                mBound = true;
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName arg0) {
+                mBound = false;
+            }
+        };
     }
 
     @Override
     protected void onStart() {
         Log.v(TAG, "AddCloud : onStart");
         super.onStart();
+        // Bind to LocalService
+        Intent intent = new Intent(this, VaultClient.class);
+        startService(intent);
+        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
     }
 
     @Override
@@ -73,6 +97,19 @@ public class AddCloud extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onCloudsChanged() {
+        // TODO : do whatever might need to be done here
+        Log.v(TAG, "AddCloud : onCloudsChanged");
+        client.updateClouds();
+        client.uploadTable(this);
+    }
+
+    @Override
+    public void onCloudsDangerChanged() {
+        // TODO : do whatever might need to be done here
     }
 
     public void switchContent(Fragment fragment, String tag) {
@@ -119,5 +156,13 @@ public class AddCloud extends AppCompatActivity {
     protected void onDestroy() {
         Log.v(TAG, "AddCloud : onDestroy");
         super.onDestroy();
+        Intent intent = new Intent(this, VaultClient.class);
+        stopService(intent);
+        // Unbind from the service
+        if (mBound) {
+            unbindService(mConnection);
+            mBound = false;
+        }
     }
+
 }

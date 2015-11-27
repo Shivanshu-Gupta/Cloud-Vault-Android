@@ -54,6 +54,7 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
     private CloudSharedPref cloudSharedPref;
 
     private Button addCloudButton;
+    private Button saveButton;
 
     private OnFragmentInteractionListener mListener;
 
@@ -107,7 +108,40 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
                 showAddCloudDialog();
             }
         });
+
+//        saveButton = (Button) view.findViewById(R.id.save_clouds);
+//        saveButton.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                showSaveCloudsDialog();
+//            }
+//        });
         return view;
+    }
+
+    //TODO: show this dialog when the user tries to delete a cloud
+    private void showSaveCloudsDialog() {
+        DialogInterface.OnClickListener dialogClickListener = new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int which) {
+                switch (which) {
+                    case DialogInterface.BUTTON_POSITIVE:
+                        // Yes button clicked
+                        mListener.onCloudsChanged();
+                        break;
+
+                    case DialogInterface.BUTTON_NEGATIVE:
+                        // No button clicked
+                        // do nothing
+                        break;
+                }
+            }
+        };
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+        builder.setTitle("Are you sure?")
+                .setMessage("Deleting a cloud will lead to loss of all the data on that cloud!")
+                .setPositiveButton("Yes", dialogClickListener)
+                .setNegativeButton("No", dialogClickListener).show();
     }
 
     private void showAddCloudDialog() {
@@ -199,6 +233,7 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
                 break;
         }
     }
+
     @Override
     public void onChosenDir(String chosenDir) {
         try {
@@ -223,33 +258,33 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
 //        cloudSharedPref = new CloudSharedPref(activity);
 //        cloudMetas = cloudSharedPref.getClouds(activity);
         switch (requestCode) {
-            case NEW_FOLDERCLOUD_REQUEST_CODE:
-                // If the file selection was successful
-                if (resultCode == Activity.RESULT_OK) {
-                    if (data != null) {
-                        // Get the URI of the selected file
-                        final Uri uri = data.getData();
-                        Log.i(TAG, "Uri = " + uri.toString());
-
-                        try {
-                            // Get the file path from the URI
-                            String path = FileUtils.getPath(activity, uri);
-                            File file = new File(path);
-                            if(file.isDirectory()) {
-                                ConcurrentHashMap<String, String> meta = new ConcurrentHashMap<>();
-                                meta.put(FolderCloud.PATH, file.getPath());
-                                CloudMeta cloudMeta = new CloudMeta(cloudMetas.size(), FolderCloud.FOLDERCLOUD, meta);
-                                addNewCloud(cloudMeta);
-                                Toast.makeText(activity, getResources().getString(R.string.cloud_added), Toast.LENGTH_SHORT).show();
-                            } else {
-                                Toast.makeText(activity, "Only a folder may be used as a folder cloud", Toast.LENGTH_SHORT).show();
-                            }
-                        } catch (Exception e) {
-                            Log.e("FileSelectorTest", "File select error", e);
-                        }
-                    }
-                }
-                break;
+//            case NEW_FOLDERCLOUD_REQUEST_CODE:
+//                // If the file selection was successful
+//                if (resultCode == Activity.RESULT_OK) {
+//                    if (data != null) {
+//                        // Get the URI of the selected file
+//                        final Uri uri = data.getData();
+//                        Log.i(TAG, "Uri = " + uri.toString());
+//
+//                        try {
+//                            // Get the file path from the URI
+//                            String path = FileUtils.getPath(activity, uri);
+//                            File file = new File(path);
+//                            if(file.isDirectory()) {
+//                                ConcurrentHashMap<String, String> meta = new ConcurrentHashMap<>();
+//                                meta.put(FolderCloud.PATH, file.getPath());
+//                                CloudMeta cloudMeta = new CloudMeta(cloudMetas.size(), FolderCloud.FOLDERCLOUD, meta);
+//                                addNewCloud(cloudMeta);
+//                                Toast.makeText(activity, getResources().getString(R.string.cloud_added), Toast.LENGTH_SHORT).show();
+//                            } else {
+//                                Toast.makeText(activity, "Only a folder may be used as a folder cloud", Toast.LENGTH_SHORT).show();
+//                            }
+//                        } catch (Exception e) {
+//                            Log.e("FileSelectorTest", "File select error", e);
+//                        }
+//                    }
+//                }
+//                break;
             case DROPBOX_LOGIN_REQUEST_CODE:
                 if (resultCode == Activity.RESULT_OK) {
                     Log.v(TAG, "logged into dropbox");
@@ -277,10 +312,13 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
     }
 
     public void addNewCloud(CloudMeta cloudMeta) {
-        //TODO: find out why cloud list's not stored in the shared preferences on restart
         cloudSharedPref.addCloud(activity, cloudMeta);
-        //TODO: adds two records for some reason! Fix.
         cloudListAdapter.add(cloudMeta);
+
+        if(cloudMetas.size() > 1) {
+            mListener.onCloudsChanged();
+        }
+
         Toast.makeText(activity, "New Cloud Added", Toast.LENGTH_SHORT).show();
     }
 
@@ -305,6 +343,7 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
     public void onDestroyView() {
         Log.v(TAG, "CloudListFragment : onDestroyView");
         super.onDestroyView();
+        mListener.onCloudsChanged();
     }
 
     @Override
@@ -320,8 +359,8 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
     }
 
     public interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
-        public void onFragmentInteraction(Uri uri);
+        void onCloudsChanged();
+        void onCloudsDangerChanged();
     }
 
 

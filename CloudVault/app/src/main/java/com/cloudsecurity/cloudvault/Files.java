@@ -51,6 +51,7 @@ public class Files extends ListFragment {
 
     //view elements
     private Button uploadButton;
+    private Button syncButton;
     private Button settingButton;
 
     private DatabaseHelper db = null;
@@ -135,6 +136,15 @@ public class Files extends ListFragment {
             public void onClick(View v) {
                 Log.v(TAG, "Files : upload button clicked.");
                 showChooser();
+            }
+        });
+
+        syncButton = (Button) view.findViewById(R.id.sync_button);
+        syncButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.v(TAG, "Files: sync button clicked.");
+                client.sync();
             }
         });
 
@@ -286,6 +296,11 @@ public class Files extends ListFragment {
     public void onStop() {
         Log.v(TAG, "Files : onStop");
         super.onStop();
+    }
+
+    @Override
+    public void onDestroy() {
+        Log.v(TAG, "Files : onDestroy");
         Intent intent = new Intent(getActivity(), VaultClient.class);
         getActivity().stopService(intent);
         // Unbind from the service
@@ -293,11 +308,6 @@ public class Files extends ListFragment {
             getActivity().unbindService(mConnection);
             mBound = false;
         }
-    }
-
-    @Override
-    public void onDestroy() {
-        Log.v(TAG, "Files : onDestroy");
         if (task != null) {
             task.cancel(false);
         }

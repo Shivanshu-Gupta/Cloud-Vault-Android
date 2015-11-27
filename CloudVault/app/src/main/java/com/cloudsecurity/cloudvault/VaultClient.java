@@ -62,7 +62,7 @@ public class VaultClient extends Service {
     public static final String DOWNLOADS_DIR = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getPath();
 
     public static final String DB_META = "dbmeta.txt";
-    public static final String DB_META_PATH = Environment.getDownloadCacheDirectory().getPath() + "dbmeta.txt";
+//    public final String DB_META_PATH = this.getFilesDir() + "dbmeta.txt";
 
     private final IBinder mBinder = new ClientBinder();
     int cloudNum;
@@ -97,6 +97,14 @@ public class VaultClient extends Service {
         super.onCreate();
         mLocalBroadcastManager = LocalBroadcastManager.getInstance(this);
         cloudSharedPref = new CloudSharedPref(this);
+        updateClouds();
+        db = DatabaseHelper.getInstance(getApplicationContext());
+        database = db.getWritableDatabase();
+    }
+
+    public void updateClouds() {
+        cloudMetas.clear();
+        clouds.clear();
         cloudMetas = cloudSharedPref.getClouds(this);
         Cloud cloud;
         if(cloudMetas != null) {
@@ -114,8 +122,6 @@ public class VaultClient extends Service {
             }
         }
         cloudNum = clouds.size();
-        db = DatabaseHelper.getInstance(getApplicationContext());
-        database = db.getWritableDatabase();
     }
 
     @Override
@@ -125,7 +131,7 @@ public class VaultClient extends Service {
 
     private Pair<FECParameters, Integer> getParams(long fileSize) {
         // epsilon
-        Log.v(TAG,"VaultClient : getParams : fileSize" + fileSize);
+        Log.v(TAG,"VaultClient : getParams : fileSize : " + fileSize);
         int overHead = 4;
         int symSize = (int) Math.round(Math.sqrt((float) fileSize * 8
                 / (float) overHead)); // symbol header length = 8, T = sqrt(D * delta / epsilon)
@@ -139,8 +145,8 @@ public class VaultClient extends Service {
         int blockSize = (int) Math.ceil((float) fileSize / (float) fecParams.numberOfSourceBlocks());
         int k = (int) Math.ceil((float) blockSize / (float) symSize);
 
-        Log.v(TAG,"VaultClient : getParams : cloudDanger" + cloudDanger);
-        Log.v(TAG,"VaultClient : getParams : cloudNum" + cloudNum);
+        Log.v(TAG,"VaultClient : getParams : cloudDanger : " + cloudDanger);
+        Log.v(TAG,"VaultClient : getParams : cloudNum : " + cloudNum);
         float gamma = (float) cloudDanger / (float) cloudNum;
 
         int r = (int) Math.ceil((gamma * k + overHead) / (1 - gamma));
@@ -423,8 +429,8 @@ public class VaultClient extends Service {
         }
     }
 
-    private void uploadTable(Context context) {
-        Log.v(TAG, "VaultClient : uploadTAble");
+    public void uploadTable(Context context) {
+        Log.v(TAG, "VaultClient : uploadTable");
         byte[] dbData;
         String DB_NAME = DatabaseHelper.DATABASE_NAME, DB_PATH;
         if(android.os.Build.VERSION.SDK_INT >= 17){
@@ -478,6 +484,18 @@ public class VaultClient extends Service {
         //MD5 hashes are 128 bit or 16 bytes long
         byte[] localDBHash = new byte[16];
         long localDBSize = -1;
+        String DB_META_PATH, DB_PATH;
+        String DB_NAME = DatabaseHelper.DATABASE_NAME;
+
+        if(android.os.Build.VERSION.SDK_INT >= 17){
+            DB_META_PATH = this.getApplicationInfo().dataDir + "/" + DB_META;
+            DB_PATH = this.getApplicationInfo().dataDir + "/databases/" + DB_NAME;
+        }
+        else {
+            DB_META_PATH = this.getFilesDir() + "/" + DB_META;
+            DB_PATH = this.getFilesDir() + this.getPackageName() + "/databases/" + DB_NAME;
+        }
+
         try{
             DataInputStream in = new DataInputStream((new FileInputStream(DB_META_PATH)));
             in.read(localDBHash, 0, localDBHash.length);
@@ -497,7 +515,7 @@ public class VaultClient extends Service {
                     DB_META_PATH));
             byte[] downloadedDBHash = new byte[16];
             in.read(downloadedDBHash, 0, downloadedDBHash.length);
-            if (localDBHash != downloadedDBHash || localDBSize == -1) {
+            if (Arrays.equals(localDBHash,downloadedDBHash) || localDBSize == -1) {
                 databaseChanged = true;
             }
             int downloadedDBSize = in.readInt();
@@ -506,13 +524,6 @@ public class VaultClient extends Service {
             Log.i(TAG, "VaultClient : downloadTable : Files DB on cloud: Size=" + downloadedDBSize + " Hash="
                     + Arrays.toString(downloadedDBHash));
             if (databaseChanged) {
-                String DB_NAME = DatabaseHelper.DATABASE_NAME, DB_PATH;
-                if(android.os.Build.VERSION.SDK_INT >= 17){
-                    DB_PATH = this.getApplicationInfo().dataDir + "/databases/" + DB_NAME;
-                }
-                else {
-                    DB_PATH = this.getFilesDir() + this.getPackageName() + "/databases/" + DB_NAME;
-                }
                 Log.v(TAG, "table hash mismatch. downloading database.");
                 downloadFile(context, DB_NAME, DB_PATH, downloadedDBSize);
             }
@@ -523,8 +534,16 @@ public class VaultClient extends Service {
         }
     }
 
-    boolean updateDBMetaFile(byte[] dbHash, int dbSize) {
+    private boolean updateDBMetaFile(byte[] dbHash, int dbSize) {
         try {
+            String DB_META_PATH;
+            if(android.os.Build.VERSION.SDK_INT >= 17){
+                DB_META_PATH = this.getApplicationInfo().dataDir + "/" + DB_META;
+            }
+            else {
+                DB_META_PATH = this.getFilesDir() + "/" + DB_META;
+            }
+            Log.v(TAG, DB_META_PATH);
             FileOutputStream fout = new FileOutputStream(DB_META_PATH);
             DataOutputStream dout = new DataOutputStream(fout);
             dout.write(dbHash);
@@ -542,6 +561,11 @@ public class VaultClient extends Service {
             return false;
         }
         return true;
+    }
+
+    public void sync() {
+        //TODO: check if downloading the table alone will update the Files List.
+        downloadTable(this);
     }
 
 //    private class TinyUploadTask extends AsyncTask<Context, Void, Void> {

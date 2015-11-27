@@ -30,5 +30,7 @@
     <string name="prefs_summ_category_one">this is summary of category one</string>
     <string name="setting1Text">Use Something</string>
     <string name="setting2Text">Mobile Data</string>
+    <string name="save_clouds_btn">Save</string>
+    <string name="sync">Sync</string>
 
 </resources>

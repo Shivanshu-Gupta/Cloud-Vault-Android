@@ -29,12 +29,11 @@ import com.ipaulpro.afilechooser.utils.FileUtils;
 
 import java.io.File;
 
-public class CloudVault extends AppCompatActivity {
+public class CloudVault extends AppCompatActivity implements CloudListFragment.OnFragmentInteractionListener {
     private static final String TAG = "CloudVault";
 
     VaultClient client;
     boolean mBound;
-
     private ServiceConnection mConnection;
 
     private Fragment contentFragment;
@@ -42,24 +41,10 @@ public class CloudVault extends AppCompatActivity {
     private IntentFilter filter = null;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState){
         Log.v(TAG, "CloudVault : onCreate");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_cloud_vault);
-
-//        FragmentManager fragmentManager = getFragmentManager();
-
-//        if(savedInstanceState != null) {
-//            if(savedInstanceState.containsKey("content")) {
-//                String content = savedInstanceState.getString("content");
-//                if(content.equals(CloudListFragment.ARG_ITEM_ID)) {
-//                    if (fragmentManager.findFragmentByTag(CloudListFragment.ARG_ITEM_ID) != null) {
-//                        setFragmentTitle(R.string.clouds);
-//                        contentFragment = fragmentManager.findFragmentByTag(CloudListFragment.ARG_ITEM_ID);
-//                    }
-//                }
-//            }
-//        }
 
         CloudSharedPref cloudSharedPref = new CloudSharedPref(this);
         int cloudCount = cloudSharedPref.getCloudCount(this);
@@ -145,6 +130,19 @@ public class CloudVault extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onCloudsChanged() {
+        Log.v(TAG, "CloudVault : onCloudsChanged");
+        client.updateClouds();
+        client.uploadTable(this);
+    }
+
+    @Override
+    public void onCloudsDangerChanged() {
+        Log.v(TAG, "CloudVault : onCloudsDangerChanged");
+        //TODO: update the client's cloudDanger
     }
 
     public void switchContent(Fragment fragment, String tag) {
