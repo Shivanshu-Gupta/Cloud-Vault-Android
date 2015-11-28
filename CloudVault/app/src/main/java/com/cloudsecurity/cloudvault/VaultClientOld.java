@@ -17,7 +17,7 @@ import android.util.Log;
 import com.cloudsecurity.cloudvault.cloud.Cloud;
 import com.cloudsecurity.cloudvault.cloud.CloudMeta;
 import com.cloudsecurity.cloudvault.cloud.FolderCloud;
-import com.cloudsecurity.cloudvault.cloud.dropbox.DropboxHandle;
+import com.cloudsecurity.cloudvault.cloud.dropbox.Dropbox;
 import com.cloudsecurity.cloudvault.util.CloudSharedPref;
 import com.cloudsecurity.cloudvault.util.Pair;
 import com.cloudsecurity.cloudvault.util.PathManip;
@@ -100,8 +100,8 @@ public class VaultClientOld extends Service {
         if(cloudMetas != null) {
             for (CloudMeta cloudMeta : cloudMetas) {
                 switch (cloudMeta.getName()) {
-                    case DropboxHandle.DROPBOX:
-                        cloud = new DropboxHandle(this, cloudMeta);
+                    case Dropbox.DROPBOX:
+                        cloud = new Dropbox(this, cloudMeta);
                         clouds.add(cloud);
                         break;
                     case FolderCloud.FOLDERCLOUD:

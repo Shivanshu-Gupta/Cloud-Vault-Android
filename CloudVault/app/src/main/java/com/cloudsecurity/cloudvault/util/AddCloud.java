@@ -16,11 +16,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
-import com.cloudsecurity.cloudvault.Files;
 import com.cloudsecurity.cloudvault.R;
 import com.cloudsecurity.cloudvault.VaultClient;
 import com.cloudsecurity.cloudvault.cloud.CloudListFragment;
-import com.cloudsecurity.cloudvault.dropbox.Dropbox;
 
 /**
  * Created by Noman on 11/25/2015.

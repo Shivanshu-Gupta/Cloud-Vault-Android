@@ -2,21 +2,20 @@ package com.cloudsecurity.cloudvault.cloud.dropbox;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.cloudsecurity.cloudvault.R;
 import com.dropbox.client2.DropboxAPI;
 import com.dropbox.client2.android.AndroidAuthSession;
 import com.dropbox.client2.android.AuthActivity;
 import com.dropbox.client2.exception.DropboxException;
+import com.dropbox.client2.session.AccessTokenPair;
 import com.dropbox.client2.session.AppKeyPair;
-
-import java.util.ArrayList;
 
 /**
  * Created by Shivanshu Gupta on 25-Oct-15.
@@ -42,6 +41,8 @@ public class DropboxAuthenticator extends Activity {
     public static final String ACTION_LOGIN = "com.cloudsecurity.cloudvault.action.LOGIN";
     public static final String ACTION_LOGOUT = "com.cloudsecurity.cloudvault.action.LOGOUT";
 
+    public static final String NEW_ACCOUNT_UID = "com.cloudsecurity.cloudvault.action.UID";
+
     DropboxAPI<AndroidAuthSession> mApi;
 
     //TODO: dirty hack. Get rid of it.
@@ -54,9 +55,7 @@ public class DropboxAuthenticator extends Activity {
 
         if (savedInstanceState != null) {
         }
-
         // We create a new AuthSession so that we can use the Dropbox API.
-//        AndroidAuthSession session = buildSession();
         AppKeyPair appKeyPair = new AppKeyPair(APP_KEY, APP_SECRET);
 
         AndroidAuthSession session = new AndroidAuthSession(appKeyPair);
@@ -65,10 +64,8 @@ public class DropboxAuthenticator extends Activity {
         checkAppKeySetup();
 
         Intent intent = getIntent();
-        String desiredUid = intent.getStringExtra(DropboxHandle.UID);
+        String desiredUid = intent.getStringExtra(Dropbox.UID);
         String[] alreadyAuthedUids = intent.getStringArrayExtra(ALREADY_AUTHED_UIDS);
-        // for now employing this functionality because of the network on main thread error
-        alreadyAuthedUids = null;
         Log.v(TAG, "Intent.action: " + intent.getAction());
         if (ACTION_LOGIN.equals(intent.getAction())) {
            if(!mApi.getSession().isLinked()) {
@@ -85,7 +82,7 @@ public class DropboxAuthenticator extends Activity {
                result.putExtra(ACCESS_KEY_NAME, "oauth2:");
                result.putExtra(ACCESS_SECRET_NAME, oauth2AccessToken);
                try {
-                   result.putExtra(DropboxHandle.UID, mApi.accountInfo().uid);
+                   result.putExtra(Dropbox.UID, mApi.accountInfo().uid);
                } catch (DropboxException e) {
                    Log.i(TAG, "Unable to get Account Info: " + e.getLocalizedMessage());
                    e.printStackTrace();
@@ -122,11 +119,7 @@ public class DropboxAuthenticator extends Activity {
                     //instead of storing here, return to store in the common meta data file.
 //                    storeAuth(session);
                     String oauth2AccessToken = session.getOAuth2AccessToken();
-                    result.putExtra(ACCESS_KEY_NAME, "oauth2:");
                     result.putExtra(ACCESS_SECRET_NAME, oauth2AccessToken);
-                    //TODO : fix this getting Account info part so that the info maybe used during authentication of new accounts
-//                    result.putExtra(DropboxHandle.UID, Long.toString(mApi.accountInfo().uid));
-                    result.putExtra(DropboxHandle.UID, "to be implemented");
                     setResult(Activity.RESULT_OK, result);
                 } catch (IllegalStateException e) {
                     showToast("Couldn't authenticate with Dropbox:" + e.getLocalizedMessage());
