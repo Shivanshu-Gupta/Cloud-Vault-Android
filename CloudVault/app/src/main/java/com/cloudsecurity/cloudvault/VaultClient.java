@@ -205,17 +205,21 @@ public class VaultClient extends Service {
                     cloudFilePath = localFileName;
                 }
 
-                //change the '/' in the cloudFilePath to '$'
-                //no effect as of now as only one level in the paths as of now.
-                cloudFilePath = (new PathManip(cloudFilePath)).toCloudFormat();
-
-                long fileSize = file.length();
-
-                downloadTable(context);
-
-                ContentValues newFile = new ContentValues(2);
-                newFile.put(DatabaseHelper.FILENAME, cloudFilePath);
-                newFile.put(DatabaseHelper.SIZE, fileSize);
+            //change the '/' in the cloudFilePath to '$'
+            //no effect as of now as only one level in the paths as of now.
+            cloudFilePath = (new PathManip(cloudFilePath)).toCloudFormat();
+            long fileSize = file.length();
+            String cloudListString = "";
+            if(cloudMetas != null) {
+                for (CloudMeta cloudMeta : cloudMetas) {
+                    cloudListString = cloudListString + "%" + cloudMeta.getId();
+                }
+            }
+            downloadTable(context);
+            ContentValues newFile = new ContentValues(3);
+            newFile.put(DatabaseHelper.FILENAME, cloudFilePath);
+            newFile.put(DatabaseHelper.SIZE, fileSize);
+            newFile.put(DatabaseHelper.CLOUDLIST,cloudListString);
 //            insertTask = new InsertTask();
 //            insertTask.execute(newFile);
                 insertRecord(newFile);

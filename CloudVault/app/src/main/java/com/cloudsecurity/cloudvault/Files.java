@@ -170,8 +170,9 @@ public class Files extends ListFragment {
                 new SimpleCursorAdapter(getActivity(), R.layout.file_row,
                         null, new String[]{
                         DatabaseHelper.FILENAME,
-                        DatabaseHelper.SIZE},
-                        new int[]{R.id.fileName, R.id.size},
+                        DatabaseHelper.SIZE,
+                        DatabaseHelper.CLOUDLIST},
+                        new int[]{R.id.fileName, R.id.size, R.id.cloudList},
                         0);
 
         setListAdapter(adapter);
@@ -198,7 +199,7 @@ public class Files extends ListFragment {
         Log.v(TAG, "Files : onCreateContextMenu");
         Log.i("ContextMenu", "Context Menu Called");
         super.onCreateContextMenu(menu, v, menuInfo);
-        Log.i("ContextMenu","View ID = " + v.getId());
+        Log.i("ContextMenu", "View ID = " + v.getId());
         MenuInflater inflater = getActivity().getMenuInflater();
         inflater.inflate(R.menu.menu_long_press, menu);
         Log.i("ContextMenu", "Menu Inflation Done");
@@ -334,7 +335,8 @@ public class Files extends ListFragment {
                             .query(DatabaseHelper.TABLE,
                                     new String[]{"ROWID AS _id",
                                             DatabaseHelper.FILENAME,
-                                            DatabaseHelper.SIZE},
+                                            DatabaseHelper.SIZE,
+                                            DatabaseHelper.CLOUDLIST},
                                     null, null, null, null, DatabaseHelper.FILENAME);
 
             result.getCount();

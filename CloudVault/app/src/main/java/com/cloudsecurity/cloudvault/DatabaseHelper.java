@@ -16,6 +16,7 @@ public class DatabaseHelper extends SQLiteOpenHelper{
     private static final int SCHEMA=1;
     static final String FILENAME="cloudFileName";
     static final String SIZE="size";
+    static final String CLOUDLIST="cloudList";
     static final String TABLE="fileSizes";
 
     private DatabaseHelper(Context context) {
@@ -31,7 +32,7 @@ public class DatabaseHelper extends SQLiteOpenHelper{
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        db.execSQL("CREATE TABLE fileSizes (cloudFileName TEXT, size REAL)");
+        db.execSQL("CREATE TABLE fileSizes (cloudFileName TEXT, size REAL, cloudList TEXT)");
 //        ContentValues cv=new ContentValues();
 //
 //        cv.put(FILENAME, "This");
