@@ -80,12 +80,8 @@
             </intent-filter>
         </provider>
 
-        <service
-            android:name=".cloud.dropbox.Dropbox"
-            android:exported="false" >
-        </service>
-        <service
-            android:name=".dropbox.Dropbox"
+       <service
+            android:name=".cloud.dropbox.AccountInfo"
             android:exported="false" >
         </service>
         <service

@@ -17,8 +17,7 @@ import android.util.Log;
 import com.cloudsecurity.cloudvault.cloud.Cloud;
 import com.cloudsecurity.cloudvault.cloud.CloudMeta;
 import com.cloudsecurity.cloudvault.cloud.FolderCloud;
-import com.cloudsecurity.cloudvault.cloud.dropbox.DropboxHandle;
-import com.cloudsecurity.cloudvault.dropbox.Dropbox;
+import com.cloudsecurity.cloudvault.cloud.dropbox.Dropbox;
 import com.cloudsecurity.cloudvault.util.CloudSharedPref;
 import com.cloudsecurity.cloudvault.util.Pair;
 import com.cloudsecurity.cloudvault.util.PathManip;
@@ -31,7 +30,6 @@ import net.fec.openrq.decoder.SourceBlockDecoder;
 import net.fec.openrq.encoder.SourceBlockEncoder;
 import net.fec.openrq.parameters.FECParameters;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -111,8 +109,8 @@ public class VaultClient extends Service {
         if(cloudMetas != null) {
             for (CloudMeta cloudMeta : cloudMetas) {
                 switch (cloudMeta.getName()) {
-                    case DropboxHandle.DROPBOX:
-                        cloud = new DropboxHandle(this, cloudMeta);
+                    case Dropbox.DROPBOX:
+                        cloud = new Dropbox(this, cloudMeta);
                         clouds.add(cloud);
                         break;
                     case FolderCloud.FOLDERCLOUD:
@@ -156,13 +154,17 @@ public class VaultClient extends Service {
     }
 
     public void upload(File file) {
-        Log.v(TAG, "VaultClient : upload : " + file);
+        if(file != null) {
+            Log.v(TAG, "VaultClient : upload : " + file);
+        }
         UploadTask uploadTask = new UploadTask(file);
         uploadTask.execute(this);
     }
 
     public void download(String cloudFilePath) {
-        Log.v(TAG, "VaultClient : download : " + cloudFilePath);
+        if(cloudFilePath != null) {
+            Log.v(TAG, "VaultClient : download : " + cloudFilePath);
+        }
         DownloadTask downloadTask = new DownloadTask(cloudFilePath);
         downloadTask.execute(this);
     }
@@ -189,16 +191,20 @@ public class VaultClient extends Service {
         @Override
         protected Void doInBackground(Context... params) {
             Context context = params[0];
-            String uploadPath = "";
-            String cloudFilePath;
-            String localFileName = file.getName();
-
-            //currently as only single files are being uploaded directly to the root directory, uploadPath will be empty.
-            if (uploadPath.length() > 0) {
-                cloudFilePath = uploadPath + "/" + localFileName;
+            if(file == null) {
+                //if the file is null then just upload the file database.
+                uploadTable(context);
             } else {
-                cloudFilePath = localFileName;
-            }
+                String uploadPath = "";
+                String cloudFilePath;
+                String localFileName = file.getName();
+
+                //currently as only single files are being uploaded directly to the root directory, uploadPath will be empty.
+                if (uploadPath.length() > 0) {
+                    cloudFilePath = uploadPath + "/" + localFileName;
+                } else {
+                    cloudFilePath = localFileName;
+                }
 
             //change the '/' in the cloudFilePath to '$'
             //no effect as of now as only one level in the paths as of now.
@@ -219,10 +225,11 @@ public class VaultClient extends Service {
             newFile.put(DatabaseHelper.TIMESTAMP,timeStamp);
 //            insertTask = new InsertTask();
 //            insertTask.execute(newFile);
-            insertRecord(newFile);
+                insertRecord(newFile);
 
-            uploadFile(context, file, cloudFilePath);
-            uploadTable(context);
+                uploadFile(context, file, cloudFilePath);
+                uploadTable(context);
+            }
             return null;
         }
     }
@@ -295,33 +302,38 @@ public class VaultClient extends Service {
         @Override
         protected Void doInBackground(Context... params) {
             Context context = params[0];
-            String writePath;
-            long fileSize;
-            downloadTable(context);
-            String[] cols = new String[]{"ROWID AS _id",
-                    DatabaseHelper.FILENAME,
-                    DatabaseHelper.SIZE};
-            Cursor cursor = db.getReadableDatabase().query(true, DatabaseHelper.TABLE, cols
-                    , DatabaseHelper.FILENAME + "=?",
-                    new String[]{cloudFilePath},
-                    null, null, null, null);
-
-            if (cursor != null && cursor.moveToFirst() && cursor.getCount() > 0) {
-                //check if need to add a '/'
-//            writePath = DOWNLOADS_DIR + '/' + cloudFilePath;
-                writePath = DOWNLOADS_DIR + "/SURA/" + cloudFilePath;                   //temporarily
-
-                String fileName = cursor.getString(cursor.getColumnIndex(DatabaseHelper.FILENAME));
-                fileSize = cursor.getLong(cursor.getColumnIndex(DatabaseHelper.SIZE));
-                cloudFilePath = (new PathManip(cloudFilePath)).toCloudFormat();
-                downloadFile(context, cloudFilePath, writePath, fileSize);
+            if(cloudFilePath == null) {
+                //if the cloudFilePath is null, use it to just download the files database.
+                downloadTable(context);
             } else {
-                //may happen that the file is not there in the db as it's is being downloaded fresh
-                //TODO : tell the user that the file wasn't found.
-                Log.e(TAG, "File not found in the database : " + cloudFilePath);
-            }
-            if(cursor!=null) {
-                cursor.close();
+                String writePath;
+                long fileSize;
+                downloadTable(context);
+                String[] cols = new String[]{"ROWID AS _id",
+                        DatabaseHelper.FILENAME,
+                        DatabaseHelper.SIZE};
+                Cursor cursor = db.getReadableDatabase().query(true, DatabaseHelper.TABLE, cols
+                        , DatabaseHelper.FILENAME + "=?",
+                        new String[]{cloudFilePath},
+                        null, null, null, null);
+
+                if (cursor != null && cursor.moveToFirst() && cursor.getCount() > 0) {
+                    //check if need to add a '/'
+//            writePath = DOWNLOADS_DIR + '/' + cloudFilePath;
+                    writePath = DOWNLOADS_DIR + "/SURA/" + cloudFilePath;                   //temporarily
+
+                    String fileName = cursor.getString(cursor.getColumnIndex(DatabaseHelper.FILENAME));
+                    fileSize = cursor.getLong(cursor.getColumnIndex(DatabaseHelper.SIZE));
+                    cloudFilePath = (new PathManip(cloudFilePath)).toCloudFormat();
+                    downloadFile(context, cloudFilePath, writePath, fileSize);
+                } else {
+                    //may happen that the file is not there in the db as it's is being downloaded fresh
+                    //TODO : tell the user that the file wasn't found.
+                    Log.e(TAG, "File not found in the database : " + cloudFilePath);
+                }
+                if(cursor!=null) {
+                    cursor.close();
+                }
             }
             return null;
         }
@@ -572,7 +584,8 @@ public class VaultClient extends Service {
 
     public void sync() {
         //TODO: check if downloading the table alone will update the Files List.
-        downloadTable(this);
+        //calling download with null just downloads the table.
+        download(null);
     }
 
 //    private class TinyUploadTask extends AsyncTask<Context, Void, Void> {

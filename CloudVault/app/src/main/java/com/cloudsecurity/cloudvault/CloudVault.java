@@ -3,31 +3,20 @@ package com.cloudsecurity.cloudvault;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
-import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.ServiceConnection;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.Button;
-import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.cloudsecurity.cloudvault.cloud.CloudListFragment;
-import com.cloudsecurity.cloudvault.cloud.dropbox.DropboxAuthenticator;
-import com.cloudsecurity.cloudvault.dropbox.Dropbox;
 import com.cloudsecurity.cloudvault.util.CloudSharedPref;
-import com.ipaulpro.afilechooser.utils.FileUtils;
-
-import java.io.File;
 
 public class CloudVault extends AppCompatActivity implements CloudListFragment.OnFragmentInteractionListener {
     private static final String TAG = "CloudVault";
@@ -37,8 +26,6 @@ public class CloudVault extends AppCompatActivity implements CloudListFragment.O
     private ServiceConnection mConnection;
 
     private Fragment contentFragment;
-
-    private IntentFilter filter = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState){
@@ -75,9 +62,6 @@ public class CloudVault extends AppCompatActivity implements CloudListFragment.O
                 mBound = false;
             }
         };
-
-        filter = new IntentFilter(Dropbox.LOGGED_IN);
-        filter.addAction(Dropbox.LOGGED_OUT);
     }
 
     @Override
@@ -136,7 +120,8 @@ public class CloudVault extends AppCompatActivity implements CloudListFragment.O
     public void onCloudsChanged() {
         Log.v(TAG, "CloudVault : onCloudsChanged");
         client.updateClouds();
-        client.uploadTable(this);
+        //upload when passed null as a parameter just uploads the file.
+        client.upload(null);
     }
 
     @Override

@@ -4,12 +4,14 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.DialogFragment;
 import android.app.Fragment;
-import android.content.ActivityNotFoundException;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.net.Uri;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Environment;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,15 +21,16 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import com.cloudsecurity.cloudvault.R;
+import com.cloudsecurity.cloudvault.cloud.dropbox.AccountInfo;
+import com.cloudsecurity.cloudvault.cloud.dropbox.Dropbox;
 import com.cloudsecurity.cloudvault.cloud.dropbox.DropboxAuthenticator;
-import com.cloudsecurity.cloudvault.cloud.dropbox.DropboxHandle;
 import com.cloudsecurity.cloudvault.util.CloudSharedPref;
 import com.cloudsecurity.cloudvault.util.DirectoryChooserDialog;
-import com.ipaulpro.afilechooser.utils.FileUtils;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -41,11 +44,11 @@ import java.util.concurrent.ConcurrentHashMap;
 public class CloudListFragment extends Fragment implements AddCloudDialogFragment.AddCloudDialogListener, DirectoryChooserDialog.ChosenDirectoryListener {
     private static final String TAG = "CloudVault";
 
-    private static final int NEW_FOLDERCLOUD_REQUEST_CODE = 1;
-    private static final int DROPBOX_LOGIN_REQUEST_CODE = 2; // onActivityResult request code
-    private static final int DROPBOX_LOGOUT_REQUEST_CODE = -2; // onActivityResult request code
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     public static final String ARG_ITEM_ID = "cloud_list_fragment";
+
+    private static final int DROPBOX_LOGIN_REQUEST_CODE = 2; // onActivityResult request code
+    private static final int DROPBOX_LOGOUT_REQUEST_CODE = -2; // onActivityResult request code
 
     private Activity activity;
     private ListView cloudListView;
@@ -53,10 +56,16 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
     private CloudListAdapter cloudListAdapter;
     private CloudSharedPref cloudSharedPref;
 
+    private LocalBroadcastManager mLocalBroadcastManager = null;
+    private BroadcastReceiver receiver = null;
+    private IntentFilter filter;
+
+    private OnFragmentInteractionListener mListener;
+
     private Button addCloudButton;
     private Button saveButton;
 
-    private OnFragmentInteractionListener mListener;
+    private CloudMeta newCloudMeta;
 
     public CloudListFragment() {
         // Required empty public constructor
@@ -119,6 +128,38 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
         return view;
     }
 
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        Log.v(TAG, "CloudListFragment : onViewCreated");
+        mLocalBroadcastManager =  LocalBroadcastManager.getInstance(getActivity());
+        receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if(intent !=null) {
+                    switch (intent.getAction()) {
+                        case Dropbox.UID :
+                            long id = intent.getLongExtra("uid", 0);
+                            Log.v(TAG, "CloudListFragment : onViewCreated : uid " + String.valueOf(id));
+                            if(id != 0) {
+                                String uid = Long.toString(id);
+                                newCloudMeta.getMeta().put("uid", uid);
+                                addNewCloud(newCloudMeta);
+                            } else {
+                                showToast("Failed to add new Dropbox cloud.");
+                            }
+                            break;
+                        case AccountInfo.FETCH_UID_FAILED :
+                            showToast("Failed to add new Dropbox cloud.");
+                            break;
+                    }
+                }
+            }
+        };
+        filter = new IntentFilter(Dropbox.UID);
+        filter.addAction(AccountInfo.FETCH_UID_FAILED);
+    }
+
     //TODO: show this dialog when the user tries to delete a cloud
     private void showSaveCloudsDialog() {
         DialogInterface.OnClickListener dialogClickListener = new DialogInterface.OnClickListener() {
@@ -150,33 +191,19 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
         addCloudDialog.show(getFragmentManager(), "new cloud");
     }
 
-    public void showAlert(String title, String message) {
-        if (activity != null && !activity.isFinishing()) {
-            AlertDialog alertDialog = new AlertDialog.Builder(activity)
-                    .create();
-            alertDialog.setTitle(title);
-            alertDialog.setMessage(message);
-            alertDialog.setCancelable(false);
-
-            // setting OK Button
-            alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "OK",
-                    new DialogInterface.OnClickListener() {
-
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-                            // activity.finish();
-                            getFragmentManager().popBackStackImmediate();
-                        }
-                    });
-            alertDialog.show();
-        }
-    }
-
     @Override
     public void onResume() {
         Log.v(TAG, "CloudListFragment : onResume");
         getActivity().setTitle(R.string.clouds);
         super.onResume();
+        mLocalBroadcastManager.registerReceiver(receiver, filter);
+    }
+
+    @Override
+    public void onPause() {
+        Log.v(TAG, "CloudListFragment : onPause");
+        super.onPause();
+        mLocalBroadcastManager.unregisterReceiver(receiver);
     }
 
     @Override
@@ -203,25 +230,27 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
     //for AddCloudDialogListener
     @Override
     public void onCloudTypeSelected(DialogFragment dialog, int cloudType) {
+        ArrayList<String> uids = new ArrayList<>();
+        String[] alreadyAuthedUids;
         switch (cloudType) {
             case 0:
                 //Create a new Dropbox cloud
                 //Start authentication for a new dropbox cloud
                 Intent intent = new Intent(getActivity(), DropboxAuthenticator.class);
                 intent.setAction(DropboxAuthenticator.ACTION_LOGIN);
-                ArrayList<String> uids = new ArrayList<>();
-                for(CloudMeta cloudMeta : cloudMetas) {
-                    if(cloudMeta.getName()==DropboxHandle.DROPBOX) {
-                        uids.add(cloudMeta.getMeta().get(DropboxHandle.UID));
+                for (CloudMeta cloudMeta : cloudMetas) {
+                    if (cloudMeta.getName().equals(Dropbox.DROPBOX)) {
+                        uids.add(cloudMeta.getMeta().get("uid"));
                     }
                 }
-                String[] alreadyAuthedUids = uids.toArray(new String[0]);
+                alreadyAuthedUids = uids.toArray(new String[uids.size()]);
                 intent.putExtra(DropboxAuthenticator.ALREADY_AUTHED_UIDS, alreadyAuthedUids);
                 startActivityForResult(intent, DROPBOX_LOGIN_REQUEST_CODE);
                 break;
             case 1:
                 //Create a new folder cloud
                 // Create DirectoryChooserDialog and register a callback
+
                 String root = Environment.getExternalStorageDirectory().getAbsolutePath();
                 DirectoryChooserDialog directoryChooserDialog =
                         new DirectoryChooserDialog(activity, this);
@@ -237,11 +266,23 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
     @Override
     public void onChosenDir(String chosenDir) {
         try {
+            boolean alreadyAddedPath = false;
+
             showToast("Chosen Path: " + chosenDir);
             File file = new File(chosenDir);
-            if(file.isDirectory()) {
+            String path = file.getPath();
+            for (CloudMeta cloudMeta : cloudMetas) {
+                if (cloudMeta.getName().equals(FolderCloud.FOLDERCLOUD)
+                        && cloudMeta.getMeta().get(FolderCloud.PATH).equals(path)) {
+                    alreadyAddedPath = true;
+                    break;
+                }
+            }
+            if (alreadyAddedPath) {
+                showAlert("Add New Cloud", "The cloud has already been added. Please add a fresh cloud.");
+            } else if (file.isDirectory()) {
                 ConcurrentHashMap<String, String> meta = new ConcurrentHashMap<>();
-                meta.put(FolderCloud.PATH, file.getPath());
+                meta.put(FolderCloud.PATH, path);
                 CloudMeta cloudMeta = new CloudMeta(cloudMetas.size(), FolderCloud.FOLDERCLOUD, meta);
                 addNewCloud(cloudMeta);
                 Toast.makeText(activity, getResources().getString(R.string.cloud_added), Toast.LENGTH_SHORT).show();
@@ -258,51 +299,27 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
 //        cloudSharedPref = new CloudSharedPref(activity);
 //        cloudMetas = cloudSharedPref.getClouds(activity);
         switch (requestCode) {
-//            case NEW_FOLDERCLOUD_REQUEST_CODE:
-//                // If the file selection was successful
-//                if (resultCode == Activity.RESULT_OK) {
-//                    if (data != null) {
-//                        // Get the URI of the selected file
-//                        final Uri uri = data.getData();
-//                        Log.i(TAG, "Uri = " + uri.toString());
-//
-//                        try {
-//                            // Get the file path from the URI
-//                            String path = FileUtils.getPath(activity, uri);
-//                            File file = new File(path);
-//                            if(file.isDirectory()) {
-//                                ConcurrentHashMap<String, String> meta = new ConcurrentHashMap<>();
-//                                meta.put(FolderCloud.PATH, file.getPath());
-//                                CloudMeta cloudMeta = new CloudMeta(cloudMetas.size(), FolderCloud.FOLDERCLOUD, meta);
-//                                addNewCloud(cloudMeta);
-//                                Toast.makeText(activity, getResources().getString(R.string.cloud_added), Toast.LENGTH_SHORT).show();
-//                            } else {
-//                                Toast.makeText(activity, "Only a folder may be used as a folder cloud", Toast.LENGTH_SHORT).show();
-//                            }
-//                        } catch (Exception e) {
-//                            Log.e("FileSelectorTest", "File select error", e);
-//                        }
-//                    }
-//                }
-//                break;
             case DROPBOX_LOGIN_REQUEST_CODE:
                 if (resultCode == Activity.RESULT_OK) {
                     Log.v(TAG, "logged into dropbox");
                     String oauth2AccessToken = data.getStringExtra(DropboxAuthenticator.ACCESS_SECRET_NAME);
-                    String uid = data.getStringExtra(DropboxHandle.UID);
                     Log.v(TAG, "Access Token: " + oauth2AccessToken);
                     ConcurrentHashMap<String, String> meta = new ConcurrentHashMap<>();
-                    meta.put(DropboxHandle.ACCESS_SECRET_NAME, oauth2AccessToken);
-                    meta.put(DropboxHandle.UID, uid);
-                    CloudMeta cloudMeta = new CloudMeta(cloudMetas.size(), DropboxHandle.DROPBOX, meta);
-                    addNewCloud(cloudMeta);
-                    Toast.makeText(activity, getResources().getString(R.string.cloud_added), Toast.LENGTH_SHORT).show();
+                    meta.put(Dropbox.ACCESS_SECRET_NAME, oauth2AccessToken);
+
+                    //insert of adding the new cloud already, store it till the uid is obtained.
+                    newCloudMeta = new CloudMeta(cloudMetas.size(), Dropbox.DROPBOX, meta);
+                    //start the service to fetch the UID
+                    Intent intent = new Intent(getActivity(), AccountInfo.class);
+                    intent.setAction(AccountInfo.ACTION_FETCH_UID);
+                    intent.putExtra(AccountInfo.ACCESS_SECRET_NAME, oauth2AccessToken);
+                    getActivity().startService(intent);
                 } else {
                     showToast("Could not link to Dropbox");
                 }
                 break;
             case DROPBOX_LOGOUT_REQUEST_CODE:
-                if(resultCode == Activity.RESULT_OK) {
+                if (resultCode == Activity.RESULT_OK) {
                     Log.v(TAG, "Unlinked from Dropbox");
                 }
                 break;
@@ -315,22 +332,38 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
         cloudSharedPref.addCloud(activity, cloudMeta);
         cloudListAdapter.add(cloudMeta);
 
-        if(cloudMetas.size() > 1) {
+        if (cloudMetas.size() > 1) {
             mListener.onCloudsChanged();
         }
 
         Toast.makeText(activity, "New Cloud Added", Toast.LENGTH_SHORT).show();
     }
 
+    public void showAlert(String title, String message) {
+        if (activity != null && !activity.isFinishing()) {
+            AlertDialog alertDialog = new AlertDialog.Builder(activity)
+                    .create();
+            alertDialog.setTitle(title);
+            alertDialog.setMessage(message);
+            alertDialog.setCancelable(false);
+
+            // setting OK Button
+            alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "OK",
+                    new DialogInterface.OnClickListener() {
+
+                        public void onClick(DialogInterface dialog, int which) {
+                            dialog.dismiss();
+                            // activity.finish();
+                            getFragmentManager().popBackStackImmediate();
+                        }
+                    });
+            alertDialog.show();
+        }
+    }
+
     private void showToast(String msg) {
         Toast error = Toast.makeText(getActivity(), msg, Toast.LENGTH_LONG);
         error.show();
-    }
-
-    @Override
-    public void onPause() {
-        Log.v(TAG, "CloudListFragment : onPause");
-        super.onPause();
     }
 
     @Override
@@ -360,6 +393,7 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
 
     public interface OnFragmentInteractionListener {
         void onCloudsChanged();
+
         void onCloudsDangerChanged();
     }
 
