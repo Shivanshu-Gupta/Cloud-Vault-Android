@@ -139,10 +139,10 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
                 if(intent !=null) {
                     switch (intent.getAction()) {
                         case Dropbox.UID :
-                            long id = intent.getLongExtra("uid", 0);
-                            Log.v(TAG, "CloudListFragment : onViewCreated : uid " + String.valueOf(id));
-                            if(id != 0) {
-                                String uid = Long.toString(id);
+                            long dbxID = intent.getLongExtra("uid", 0);
+                            Log.v(TAG, "CloudListFragment : onViewCreated : uid " + String.valueOf(dbxID));
+                            if(dbxID != 0) {
+                                String uid = Long.toString(dbxID);
                                 newCloudMeta.getMeta().put("uid", uid);
                                 addNewCloud(newCloudMeta);
                             } else {
@@ -283,7 +283,9 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
             } else if (file.isDirectory()) {
                 ConcurrentHashMap<String, String> meta = new ConcurrentHashMap<>();
                 meta.put(FolderCloud.PATH, path);
-                CloudMeta cloudMeta = new CloudMeta(cloudMetas.size(), FolderCloud.FOLDERCLOUD, meta);
+                //the path is also used as the uid
+                meta.put("uid", path);
+                CloudMeta cloudMeta = new CloudMeta(cloudSharedPref.getNextID(activity), FolderCloud.FOLDERCLOUD, meta);
                 addNewCloud(cloudMeta);
                 Toast.makeText(activity, getResources().getString(R.string.cloud_added), Toast.LENGTH_SHORT).show();
             } else {
@@ -308,7 +310,7 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
                     meta.put(Dropbox.ACCESS_SECRET_NAME, oauth2AccessToken);
 
                     //insert of adding the new cloud already, store it till the uid is obtained.
-                    newCloudMeta = new CloudMeta(cloudMetas.size(), Dropbox.DROPBOX, meta);
+                    newCloudMeta = new CloudMeta(cloudSharedPref.getNextID(activity), Dropbox.DROPBOX, meta);
                     //start the service to fetch the UID
                     Intent intent = new Intent(getActivity(), AccountInfo.class);
                     intent.setAction(AccountInfo.ACTION_FETCH_UID);

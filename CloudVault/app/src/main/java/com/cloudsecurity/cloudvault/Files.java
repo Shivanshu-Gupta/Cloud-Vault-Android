@@ -33,10 +33,14 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.cloudsecurity.cloudvault.util.FilesDetailsFragment;
+import com.cloudsecurity.cloudvault.util.Pair;
 import com.cloudsecurity.cloudvault.util.SettingsActivity;
+import com.google.gson.Gson;
 import com.ipaulpro.afilechooser.utils.FileUtils;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 
 /**
@@ -230,15 +234,16 @@ public class Files extends ListFragment {
                                             DatabaseHelper.FILENAME + "=" + "'" + filename + "'",
                                             null, null, null, DatabaseHelper.FILENAME);
                 String size = "";
-                String list_of_clouds = "";
+                String[] cloudsUsed = null;
                 String time_date = "";
                 if(result.moveToFirst())
                 {
                     size = result.getString(result.getColumnIndex(DatabaseHelper.SIZE));
-                    list_of_clouds = result.getString(result.getColumnIndex(DatabaseHelper.CLOUDLIST));
+                    Gson gson = new Gson();
+                    cloudsUsed = gson.fromJson(result.getString(result.getColumnIndex(DatabaseHelper.CLOUDLIST)), String[].class);
                     time_date = result.getString(result.getColumnIndex(DatabaseHelper.TIMESTAMP));
                 }
-                String message = new FilesDetailsFragment(filename,size,list_of_clouds,time_date).getMessage();
+                String message = new FilesDetailsFragment(filename,size,cloudsUsed,time_date).getMessage();
                 AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
                 builder.setMessage(message).setTitle(filename);
                 AlertDialog dialog = builder.create();

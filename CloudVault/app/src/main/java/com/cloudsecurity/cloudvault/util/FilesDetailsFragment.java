@@ -1,15 +1,17 @@
 package com.cloudsecurity.cloudvault.util;
 
+import java.util.ArrayList;
+
 /**
  * Created by Noman on 11/28/2015.
  */
 public class FilesDetailsFragment {
     String fileName;
     String fileSize;
-    String cloudList;
+    String[] cloudList;
     String timeStamp;
 
-    public FilesDetailsFragment(String name, String size, String list, String time)
+    public FilesDetailsFragment(String name, String size, String[] list, String time)
     {
         fileName = name;
         fileSize = size;
@@ -50,15 +52,13 @@ public class FilesDetailsFragment {
     String getCloudMessage()
     {
         String reply = "CLOUD DETAILS\n";
-        if(cloudList.equals(""))
+        if(cloudList == null || cloudList.equals("")) {
             reply = reply + "Not Available";
-        else{
-            String[] clouds = cloudList.split("%");
-            int index = 0;
-            for(String cloud : clouds){
-                if(index>0){
-                    reply = reply + index + ". " + cloud + "\n";
-                }
+        } else {
+            int index = 1;
+            for(String cloud : cloudList){
+                String[] cloudParams = cloud.split("--");
+                reply = reply + index + ". " + cloudParams[0] + ": " + cloudParams[1] +  "\n";
                 index++;
             }
         }

@@ -17,6 +17,7 @@ public class CloudSharedPref {
 
 	public static final String PREFS_NAME = "CLOUDVAULT";
 	public static final String CLOUDS_META = "CloudsMetaData";
+	public static final String NEXT_ID = "Next Available Cloud ID";
 
 	public CloudSharedPref(Context context) {
 		super();
@@ -36,7 +37,7 @@ public class CloudSharedPref {
 		String jsonClouds = gson.toJson(clouds);
         Log.v(TAG, "CloudsMetaData: " + jsonClouds);
 		editor.putString(CLOUDS_META, jsonClouds);
-
+		editor.putInt(NEXT_ID, settings.getInt(NEXT_ID, 0) + 1);
 		editor.commit();
 	}
 
@@ -80,6 +81,21 @@ public class CloudSharedPref {
 
 		return (ArrayList<CloudMeta>) clouds;
 	}
+
+    public int getNextID(Context context) {
+        Log.v(TAG, "CloudSharedPref: getClouds");
+        SharedPreferences settings;
+        int nextUID;
+        settings = context.getSharedPreferences(PREFS_NAME,
+                Context.MODE_PRIVATE);
+        if(!settings.contains(NEXT_ID)) {
+            List<CloudMeta> clouds = new ArrayList<>();
+            saveClouds(context, clouds);
+        }
+        nextUID = settings.getInt(NEXT_ID, 0);
+
+        return nextUID;
+    }
 
 	public int getCloudCount(Context context) {
 		SharedPreferences settings;
