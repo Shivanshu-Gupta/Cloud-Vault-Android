@@ -44,6 +44,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.List;
 
 import static org.apache.commons.io.FileUtils.readFileToByteArray;
@@ -209,11 +210,13 @@ public class VaultClient extends Service {
                     cloudListString = cloudListString + "%" + cloudMeta.getId();
                 }
             }
+            String timeStamp =java.text.DateFormat.getDateTimeInstance().format(Calendar.getInstance().getTime());
             downloadTable(context);
-            ContentValues newFile = new ContentValues(3);
+            ContentValues newFile = new ContentValues(4);
             newFile.put(DatabaseHelper.FILENAME, cloudFilePath);
             newFile.put(DatabaseHelper.SIZE, fileSize);
             newFile.put(DatabaseHelper.CLOUDLIST,cloudListString);
+            newFile.put(DatabaseHelper.TIMESTAMP,timeStamp);
 //            insertTask = new InsertTask();
 //            insertTask.execute(newFile);
             insertRecord(newFile);

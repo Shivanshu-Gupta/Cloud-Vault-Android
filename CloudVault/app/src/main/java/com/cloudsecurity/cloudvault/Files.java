@@ -1,6 +1,7 @@
 package com.cloudsecurity.cloudvault;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.ListFragment;
 import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
@@ -31,6 +32,7 @@ import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.cloudsecurity.cloudvault.util.FilesDetailsFragment;
 import com.cloudsecurity.cloudvault.util.SettingsActivity;
 import com.ipaulpro.afilechooser.utils.FileUtils;
 
@@ -170,9 +172,8 @@ public class Files extends ListFragment {
                 new SimpleCursorAdapter(getActivity(), R.layout.file_row,
                         null, new String[]{
                         DatabaseHelper.FILENAME,
-                        DatabaseHelper.SIZE,
-                        DatabaseHelper.CLOUDLIST},
-                        new int[]{R.id.fileName, R.id.size, R.id.cloudList},
+                        DatabaseHelper.SIZE},
+                        new int[]{R.id.fileName, R.id.size},
                         0);
 
         setListAdapter(adapter);
@@ -218,6 +219,30 @@ public class Files extends ListFragment {
                 return true;
             case R.id.delete:
                 client.delete(filename);
+                return true;
+            case R.id.properties:
+                Cursor result = db.getReadableDatabase()
+                                    .query(DatabaseHelper.TABLE,
+                                            new String[]{"ROWID AS _id",
+                                                    DatabaseHelper.SIZE,
+                                                    DatabaseHelper.CLOUDLIST,
+                                                    DatabaseHelper.TIMESTAMP},
+                                            DatabaseHelper.FILENAME + "=" + "'" + filename + "'",
+                                            null, null, null, DatabaseHelper.FILENAME);
+                String size = "";
+                String list_of_clouds = "";
+                String time_date = "";
+                if(result.moveToFirst())
+                {
+                    size = result.getString(result.getColumnIndex(DatabaseHelper.SIZE));
+                    list_of_clouds = result.getString(result.getColumnIndex(DatabaseHelper.CLOUDLIST));
+                    time_date = result.getString(result.getColumnIndex(DatabaseHelper.TIMESTAMP));
+                }
+                String message = new FilesDetailsFragment(filename,size,list_of_clouds,time_date).getMessage();
+                AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+                builder.setMessage(message).setTitle(filename);
+                AlertDialog dialog = builder.create();
+                dialog.show();
                 return true;
             default:
                 return super.onContextItemSelected(item);
@@ -340,7 +365,6 @@ public class Files extends ListFragment {
                                     null, null, null, null, DatabaseHelper.FILENAME);
 
             result.getCount();
-
             //return the cursor obtained
             return (result);
         }

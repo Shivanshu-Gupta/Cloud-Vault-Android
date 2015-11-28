@@ -10,4 +10,8 @@ xmlns:android="http://schemas.android.com/apk/res/android">
     android:icon="@android:drawable/ic_menu_delete"
     android:title="Delete File" />
 
+<item android:id="@+id/properties"
+    android:icon="@android:drawable/ic_menu_delete"
+    android:title="Properties" />
+
 </menu>
