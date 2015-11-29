@@ -9,23 +9,33 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.database.Cursor;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
+import android.view.ContextMenu;
 import android.view.LayoutInflater;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import com.cloudsecurity.cloudvault.DatabaseHelper;
 import com.cloudsecurity.cloudvault.R;
 import com.cloudsecurity.cloudvault.cloud.dropbox.AccountInfo;
 import com.cloudsecurity.cloudvault.cloud.dropbox.Dropbox;
 import com.cloudsecurity.cloudvault.cloud.dropbox.DropboxAuthenticator;
 import com.cloudsecurity.cloudvault.util.CloudSharedPref;
 import com.cloudsecurity.cloudvault.util.DirectoryChooserDialog;
+import com.cloudsecurity.cloudvault.util.FilesDetailsFragment;
+import com.google.gson.Gson;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -159,6 +169,34 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
         };
         filter = new IntentFilter(AccountInfo.ACCOUNT_INFO);
         filter.addAction(AccountInfo.FETCH_ACCOUNT_FAILED);
+    }
+
+
+    @Override
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+        Log.v(TAG, "CloudListFragment : onCreateContextMenu");
+        Log.i("ContextMenu", "Context Menu Called");
+        super.onCreateContextMenu(menu, v, menuInfo);
+        Log.i("ContextMenu", "View ID = " + v.getId());
+        MenuInflater inflater = getActivity().getMenuInflater();
+        inflater.inflate(R.menu.cloud_long_press, menu);
+        Log.i("ContextMenu", "Menu Inflation Done");
+    }
+
+    @Override
+    public boolean onContextItemSelected(MenuItem item) {
+        Log.v(TAG, "CloudListFragment : onContextItemSelected");
+        AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
+        Log.i("ContextMenu", "OnContextItem Selected");
+        RelativeLayout selectedRow = ((RelativeLayout) info.targetView);
+        String  filename = ((TextView) selectedRow.getChildAt(0)).getText().toString();
+        switch(item.getItemId()) {
+            case R.id.delete_cloud:
+                showToast("deleting cloud");
+                return true;
+            default:
+                return super.onContextItemSelected(item);
+        }
     }
 
     //TODO: show this dialog when the user tries to delete a cloud
