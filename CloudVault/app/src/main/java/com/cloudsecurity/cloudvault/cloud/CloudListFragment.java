@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.DialogFragment;
 import android.app.Fragment;
+import android.app.ListFragment;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -167,6 +168,7 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
                 }
             }
         };
+        registerForContextMenu((ListView) getActivity().findViewById(R.id.list_clouds));
         filter = new IntentFilter(AccountInfo.ACCOUNT_INFO);
         filter.addAction(AccountInfo.FETCH_ACCOUNT_FAILED);
     }
@@ -188,11 +190,12 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
         Log.v(TAG, "CloudListFragment : onContextItemSelected");
         AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
         Log.i("ContextMenu", "OnContextItem Selected");
-        RelativeLayout selectedRow = ((RelativeLayout) info.targetView);
-        String  filename = ((TextView) selectedRow.getChildAt(0)).getText().toString();
+//        RelativeLayout selectedRow = ((RelativeLayout) info.targetView);
+        int position = info.position;
+//        String cloudname = ((TextView) selectedRow.getChildAt(0)).getText().toString();
         switch(item.getItemId()) {
             case R.id.delete_cloud:
-                showToast("deleting cloud");
+                mListener.onCloudDeleted(cloudMetas.get(position).getGenericName());
                 return true;
             default:
                 return super.onContextItemSelected(item);
