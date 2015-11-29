@@ -2,35 +2,35 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.cloudsecurity.cloudvault.cloud.CloudListFragment"
-    android:background="#EDEDED" >
-
+    tools:context="com.cloudsecurity.cloudvault.Files">
     <ListView
         android:id="@+id/list_clouds"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_gravity="center"
         android:divider="@color/transparent"
         android:dividerHeight="10dp"
         android:drawSelectorOnTop="true"
         android:footerDividersEnabled="false"
         android:padding="10dp"
-        android:scrollbarStyle="outsideOverlay" >
-    </ListView>
+        android:scrollbarStyle="outsideOverlay"
+        android:layout_above="@+id/btns" />
 
     <LinearLayout
         android:id="@+id/btns"
         android:layout_width="match_parent"
-        android:layout_height="fill_parent"
-        android:gravity="bottom">
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentBottom="true">
         <Button
             android:id="@+id/add_cloud"
-            android:layout_width="fill_parent"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="@string/add_cloud_btn" />
         <Button
             android:id="@+id/save_clouds"
-            android:layout_width="fill_parent"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="@string/save_clouds_btn"/>
