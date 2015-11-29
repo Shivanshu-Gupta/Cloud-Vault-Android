@@ -168,7 +168,7 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
                 switch (which) {
                     case DialogInterface.BUTTON_POSITIVE:
                         // Yes button clicked
-                        mListener.onCloudsChanged();
+                        mListener.onCloudAdded();
                         break;
 
                     case DialogInterface.BUTTON_NEGATIVE:
@@ -336,7 +336,7 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
         cloudListAdapter.add(cloudMeta);
 
         if (cloudMetas.size() > 1) {
-            mListener.onCloudsChanged();
+            mListener.onCloudAdded();
         }
 
         Toast.makeText(activity, "New Cloud Added", Toast.LENGTH_SHORT).show();
@@ -379,7 +379,6 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
     public void onDestroyView() {
         Log.v(TAG, "CloudListFragment : onDestroyView");
         super.onDestroyView();
-        mListener.onCloudsChanged();
     }
 
     @Override
@@ -395,7 +394,8 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
     }
 
     public interface OnFragmentInteractionListener {
-        void onCloudsChanged();
+        void onCloudAdded();
+        void onCloudDeleted(String genericName);
 
         void onCloudsDangerChanged();
     }

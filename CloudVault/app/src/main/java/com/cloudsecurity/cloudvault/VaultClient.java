@@ -60,6 +60,7 @@ public class VaultClient extends Service {
     private static final String TAG = "CloudVault";
     public static final String FILE_UPLOADED = "com.cloudsecurity.cloudvault.action.FILE_UPLOADED";
     public static final String FILE_DELETED = "com.cloudsecurity.cloudvault.action.FILE_DELETED";
+    public static final String FILES_DB_SYNCED = "com.cloudsecurity.cloudvault.action.FILES_DB_SYNCED";
     public static final String DOWNLOADS_DIR = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getPath();
 
     public static final String DB_META = "dbmeta.txt";
@@ -285,17 +286,10 @@ public class VaultClient extends Service {
                     cloudMeta = cloudMetas.get(idx);
                     try{
                         cloud.upload(context, blockFileName, dataArrays.get(idx).toByteArray());
-                        switch(cloudMeta.getName()){
-                            case FolderCloud.FOLDERCLOUD:
-                                cloudsUsed.add(cloudMeta.getName() + "--" + cloudMeta.getMeta().get("uid"));
-                                break;
-                            case Dropbox.DROPBOX:
-                                cloudsUsed.add(cloudMeta.getName() + "--" + cloudMeta.getMeta().get("email"));
-                                break;
-                        }
+                        cloudsUsed.add(cloudMeta.getGenericName());
                     } catch(Exception e) {
                         Log.e(TAG, "Exception while uploading File " + cloudFilePath + " to " +
-                                cloudMeta.getName());
+                                cloudMeta.getGenericName());
                     }
                     idx++;
                 }
@@ -322,6 +316,8 @@ public class VaultClient extends Service {
             if (cloudFilePath == null) {
                 //if the cloudFilePath is null, use it to just download the files database.
                 downloadTable(context);
+                Intent intent = new Intent(FILES_DB_SYNCED);
+                mLocalBroadcastManager.sendBroadcast(intent);
             } else {
                 String writePath;
                 long fileSize;
@@ -381,7 +377,7 @@ public class VaultClient extends Service {
                         blocksData.add(cloud.download(context, blockFileName));
                     } catch (Exception e) {
                         Log.e(TAG, "Couldn't download " + writePath + " from " +
-                                cloudMeta.getName(), e);
+                                cloudMeta.getGenericName(), e);
                     }
                     idx++;
                 }
@@ -471,7 +467,7 @@ public class VaultClient extends Service {
                         cloud.delete(context, blockFileName);
                     } catch(Exception e) {
                         Log.v(TAG, "Couldn't delete " + cloudFilePath + " from " +
-                                cloudMeta.getName(), e);
+                                cloudMeta.getGenericName(), e);
                     }
                     idx++;
                 }
@@ -621,32 +617,6 @@ public class VaultClient extends Service {
         download(null);
     }
 
-//    private class TinyUploadTask extends AsyncTask<Context, Void, Void> {
-//        byte[] data;
-//        String cloudFilePath;
-//
-//        public TinyUploadTask(byte[] data, String cloudFilePath) {
-//            this.data = data;
-//            this.cloudFilePath = cloudFilePath;
-//        }
-//
-//        @Override
-//        protected Void doInBackground(Context... params) {
-//            Context context = params[0];
-//            try {
-//                long fileSize = data.length;
-//                Log.i(TAG, "VaultClient : TinyUploadTask : " + cloudFilePath);
-//                for(Cloud cloud: clouds) {
-//                    cloud.upload(context, cloudFilePath, data);
-//                }
-//            } catch (Exception e) {
-//                Log.e(TAG, "Exception in uploading File " + cloudFilePath, e);
-//                e.printStackTrace();
-//            }
-//            return null;
-//        }
-//    }
-
     private void tinyUploadFile(Context context, byte[] data, String cloudFilePath) {
         try {
             Log.i(TAG, "VaultClient : TinyUploadTask : " + cloudFilePath);
@@ -658,50 +628,6 @@ public class VaultClient extends Service {
             e.printStackTrace();
         }
     }
-
-//    private class TinyDownloadTask extends AsyncTask<Context, Void, Void> {
-//        String cloudFilePath;
-//        String writePath;
-//
-//        public TinyDownloadTask(String cloudFilePath, String writePath) {
-//            this.cloudFilePath = cloudFilePath;
-//            this.writePath = writePath;
-//        }
-//
-//        @Override
-//        protected Void doInBackground(Context... params) {
-//            Context context = params[0];
-//            FileOutputStream fos = null;
-//            try {
-//                fos = new FileOutputStream(writePath);
-//            } catch (FileNotFoundException e) {
-//                e.printStackTrace();
-//                Log.e(TAG, "VaultClient : TinyDownloadTask : unable to open file for writing");
-//            }
-//            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-//            for(Cloud cloud : clouds) {
-//                try {
-//                    bos.write(cloud.download(context, cloudFilePath));
-//                } catch (IOException e) {
-//                    bos.reset();
-////                    e.printStackTrace();
-//                }
-//            }
-//            //TODO : check if just checking the number of bytes written is enough
-//            if(bos.size() > 0 && fos != null) {
-//                try {
-//                    fos.write(bos.toByteArray());
-//                } catch (IOException e) {
-//                    e.printStackTrace();
-//                    Log.e(TAG, "VaultClient : TinyDownloadTask : unable to write file " + cloudFilePath);
-//                }
-//            } else {
-//                Log.e(TAG, "VaultClient : TinyDOwnloadTask : couldn't download file " + cloudFilePath);
-//            }
-//
-//            return null;
-//        }
-//    }
 
     private void tinyDownloadFile(Context context, String cloudFilePath, String writePath) {
         FileOutputStream fos = null;
@@ -733,12 +659,59 @@ public class VaultClient extends Service {
         }
     }
 
+    public void updateFileCloudLists(String genericName) {
+        new FileCloudsListsUpdateTask().execute(genericName);
+    }
+
     /*
     * An extension of Binder class used to bind to this class.
     * */
     public class ClientBinder extends Binder {
         public VaultClient getService() {
             return VaultClient.this;
+        }
+    }
+
+    private void insertRecord(ContentValues... values) {
+        database = db.getWritableDatabase();
+        database.insert(DatabaseHelper.TABLE, DatabaseHelper.FILENAME, values[0]);
+        Intent intent = new Intent(FILE_UPLOADED);
+        mLocalBroadcastManager.sendBroadcast(intent);
+    }
+
+    private void removeRecord(String... values) {
+        database = db.getWritableDatabase();
+        database.delete(DatabaseHelper.TABLE, DatabaseHelper.FILENAME + "=?",
+                new String[]{values[0]});
+        Intent intent = new Intent(FILE_DELETED);
+        mLocalBroadcastManager.sendBroadcast(intent);
+    }
+
+    private class FileCloudsListsUpdateTask extends AsyncTask<String, Void, Void> {
+
+        @Override
+        protected Void doInBackground(String... params) {
+            Cursor cur = db.getWritableDatabase().rawQuery("SELECT * FROM " + DatabaseHelper.TABLE, null);
+            HashSet<String> cloudsUsed = new HashSet<>();
+            String[] cloudsUsedList;
+            ContentValues updateFile = new ContentValues(1);
+            String fileName;
+            Gson gson = new Gson();
+            if (cur != null) {
+                if (cur.moveToFirst()) {
+                    do {
+                        fileName = cur.getString(cur.getColumnIndex(DatabaseHelper.FILENAME));
+                        cloudsUsedList = gson.fromJson(cur.getString(cur.getColumnIndex(DatabaseHelper.CLOUDLIST)), String[].class);
+                        cloudsUsed.addAll(Arrays.asList(cloudsUsedList));
+                        cloudsUsed.remove(params[0]);
+                        cloudsUsedList = (String[]) cloudsUsed.toArray();
+                        updateFile.put(DatabaseHelper.CLOUDLIST, gson.toJson(cloudsUsedList));
+                        db.getWritableDatabase().update(DatabaseHelper.TABLE, updateFile,
+                                DatabaseHelper.FILENAME + " = ?", new String[]{fileName});
+                    } while (cur.moveToNext());
+                }
+            }
+            return null;
         }
     }
 
@@ -759,7 +732,7 @@ public class VaultClient extends Service {
         }
     }
 
-//    private class InsertTask extends BaseTask<ContentValues> {
+    //    private class InsertTask extends BaseTask<ContentValues> {
 //        @Override
 //        public void onPostExecute(Cursor result) {
 //            Intent intent = new Intent(FILE_UPLOADED);
@@ -775,14 +748,7 @@ public class VaultClient extends Service {
 //        }
 //    }
 
-    private void insertRecord(ContentValues... values) {
-        database = db.getWritableDatabase();
-        database.insert(DatabaseHelper.TABLE, DatabaseHelper.FILENAME, values[0]);
-        Intent intent = new Intent(FILE_UPLOADED);
-        mLocalBroadcastManager.sendBroadcast(intent);
-    }
-
-//    private class RemoveTask extends BaseTask<String> {
+    //    private class RemoveTask extends BaseTask<String> {
 //        @Override
 //        public void onPostExecute(Cursor result) {
 //            Intent intent = new Intent(FILE_DELETED);
@@ -798,15 +764,6 @@ public class VaultClient extends Service {
 //            return (doQuery());
 //        }
 //    }
-
-    private void removeRecord(String... values) {
-        database = db.getWritableDatabase();
-        database.delete(DatabaseHelper.TABLE, DatabaseHelper.FILENAME + "=?",
-                new String[]{values[0]});
-        Intent intent = new Intent(FILE_DELETED);
-        mLocalBroadcastManager.sendBroadcast(intent);
-    }
-
     @Override
     public boolean onUnbind(Intent intent) {
         Log.v(TAG, "VaultClient : onUnbind");

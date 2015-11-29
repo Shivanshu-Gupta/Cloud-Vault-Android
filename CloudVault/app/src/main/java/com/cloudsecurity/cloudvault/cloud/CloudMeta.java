@@ -3,6 +3,8 @@ package com.cloudsecurity.cloudvault.cloud;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import com.cloudsecurity.cloudvault.cloud.dropbox.Dropbox;
+
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -45,6 +47,19 @@ public class CloudMeta {
 
     public void setMeta(ConcurrentHashMap<String, String> meta) {
         this.meta = meta;
+    }
+
+    public String getGenericName() {
+        String genericName = "";
+        switch (name) {
+            case FolderCloud.FOLDERCLOUD:
+                genericName = name + "--" + meta.get("path");
+                break;
+            case Dropbox.DROPBOX:
+                genericName = name + "--" + meta.get("uid");
+                break;
+        }
+        return genericName;
     }
 
     @Override

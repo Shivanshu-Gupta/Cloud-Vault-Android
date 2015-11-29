@@ -117,11 +117,19 @@ public class CloudVault extends AppCompatActivity implements CloudListFragment.O
     }
 
     @Override
-    public void onCloudsChanged() {
-        Log.v(TAG, "CloudVault : onCloudsChanged");
+    public void onCloudAdded() {
+        Log.v(TAG, "CloudVault : onCloudDeleted");
         client.updateClouds();
         //upload when passed null as a parameter just uploads the file.
         client.upload(null);
+    }
+
+    @Override
+    public void onCloudDeleted(String genericName) {
+        Log.v(TAG, "AddCloud : onCloudAdded");
+        client.updateClouds();
+        client.uploadTable(this);
+        client.updateFileCloudLists(genericName);
     }
 
     @Override

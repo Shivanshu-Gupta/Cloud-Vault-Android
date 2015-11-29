@@ -14,7 +14,6 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.app.Fragment;
 import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
@@ -33,24 +32,12 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.cloudsecurity.cloudvault.util.FilesDetailsFragment;
-import com.cloudsecurity.cloudvault.util.Pair;
 import com.cloudsecurity.cloudvault.util.SettingsActivity;
 import com.google.gson.Gson;
 import com.ipaulpro.afilechooser.utils.FileUtils;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
 
-
-/**
- * A simple {@link Fragment} subclass.
- * Activities that contain this fragment must implement the
- * {@link Files.OnFragmentInteractionListener} interface
- * to handle interaction events.
- * Use the {@link Files#newInstance} factory method to
- * create an instance of this fragment.
- */
 public class Files extends ListFragment {
     private static final String TAG = "CloudVault";
     public static final String ARG_ITEM_ID = "cloud_list_fragment";
@@ -192,12 +179,16 @@ public class Files extends ListFragment {
             public void onReceive(Context context, Intent intent) {
                 if(intent !=null) {
                     final String action = intent.getAction();
-                    if (action.equals(VaultClient.FILE_UPLOADED) || action.equals(VaultClient.FILE_DELETED))
+                    if (action.equals(VaultClient.FILE_UPLOADED)
+                            || action.equals(VaultClient.FILE_DELETED)
+                            || action.equals(VaultClient.FILES_DB_SYNCED))
                         task = new LoadCursorTask().execute();
                 }
             }
         };
         filter = new IntentFilter(VaultClient.FILE_UPLOADED);
+        filter.addAction(VaultClient.FILE_DELETED);
+        filter.addAction(VaultClient.FILES_DB_SYNCED);
     }
     @Override
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {

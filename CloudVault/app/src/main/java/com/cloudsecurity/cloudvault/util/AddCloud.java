@@ -98,11 +98,19 @@ public class AddCloud extends AppCompatActivity implements CloudListFragment.OnF
     }
 
     @Override
-    public void onCloudsChanged() {
+    public void onCloudAdded() {
         // TODO : do whatever might need to be done here
-        Log.v(TAG, "AddCloud : onCloudsChanged");
+        Log.v(TAG, "AddCloud : onCloudDeleted");
         client.updateClouds();
         client.uploadTable(this);
+    }
+
+    @Override
+    public void onCloudDeleted(String genericName) {
+        Log.v(TAG, "AddCloud : onCloudAdded");
+        client.updateClouds();
+        client.uploadTable(this);
+        client.updateFileCloudLists(genericName);
     }
 
     @Override
