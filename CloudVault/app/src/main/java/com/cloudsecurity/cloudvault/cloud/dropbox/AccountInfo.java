@@ -8,7 +8,6 @@ import android.util.Log;
 import com.dropbox.client2.DropboxAPI;
 import com.dropbox.client2.android.AndroidAuthSession;
 import com.dropbox.client2.exception.DropboxException;
-import com.dropbox.client2.session.AccessTokenPair;
 import com.dropbox.client2.session.AppKeyPair;
 
 /**
@@ -28,8 +27,9 @@ public class AccountInfo extends IntentService {
     //                      End app-specific settings.                       //
     ///////////////////////////////////////////////////////////////////////////
 
-    public static final String ACTION_FETCH_UID = "com.cloudsecurity.cloudvault.cloud.dropbox.action.FETCH_UID";
-    public static final String FETCH_UID_FAILED = "com.cloudsecurity.cloudvault.cloud.dropbox.FETCH_UID_FAILED";
+    public static final String ACTION_FETCH_ACCOUNT = "com.cloudsecurity.cloudvault.cloud.dropbox.action.FETCH_ACCOUNT";
+    public static final String FETCH_ACCOUNT_FAILED = "com.cloudsecurity.cloudvault.cloud.dropbox.FETCH_ACCOUNT_FAILED";
+    public static final String ACCOUNT_INFO = "com.cloudsecurity.cloudvault.cloud.dropbox.ACCOUNT_INFO";
     public static final String ACCESS_SECRET_NAME = "ACCESS_SECRET";
     public String ACCESS_SECRET;
 
@@ -54,20 +54,22 @@ public class AccountInfo extends IntentService {
         mLocalBroadCastManager = LocalBroadcastManager.getInstance(this);
         ACCESS_SECRET = intent.getStringExtra(ACCESS_SECRET_NAME);
         Log.v(TAG, "AccountInfo : ACCESS_SECRET : " + ACCESS_SECRET);
-        long uid;
-        Intent uidIntent = null;
+        Intent infoIntent = null;
         boolean success = false;
         if(setupApi()) {
             switch (intent.getAction()) {
-                case ACTION_FETCH_UID:
+                case ACTION_FETCH_ACCOUNT:
                     try {
                         if(!mApi.getSession().isLinked()) {
                             Log.v(TAG, "still not linked!!!!");
                         }
-                        uid = mApi.accountInfo().uid;
+                        DropboxAPI.Account account = mApi.accountInfo();
+                        long uid = account.uid;
+                        String email = account.email;
                         Log.v(TAG, "AccountInfo : UID : " + uid);
-                        uidIntent = new Intent(Dropbox.UID);
-                        uidIntent.putExtra("uid", uid);
+                        infoIntent = new Intent(ACCOUNT_INFO);
+                        infoIntent.putExtra("uid", uid);
+                        infoIntent.putExtra("email", email);
                         success = true;
                     } catch (DropboxException e) {
                         e.printStackTrace();
@@ -76,9 +78,9 @@ public class AccountInfo extends IntentService {
         }
         if(!success) {
             Log.v(TAG, "Couldn't fetch the Account Info");
-            uidIntent = new Intent(FETCH_UID_FAILED);
+            infoIntent = new Intent(FETCH_ACCOUNT_FAILED);
         }
-        mLocalBroadCastManager.sendBroadcast(uidIntent);
+        mLocalBroadCastManager.sendBroadcast(infoIntent);
     }
 
     private boolean setupApi() {

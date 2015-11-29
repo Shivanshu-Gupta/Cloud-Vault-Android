@@ -285,7 +285,14 @@ public class VaultClient extends Service {
                     cloudMeta = cloudMetas.get(idx);
                     try{
                         cloud.upload(context, blockFileName, dataArrays.get(idx).toByteArray());
-                        cloudsUsed.add(cloudMeta.getName() + "--" + cloudMeta.getMeta().get("uid"));
+                        switch(cloudMeta.getName()){
+                            case FolderCloud.FOLDERCLOUD:
+                                cloudsUsed.add(cloudMeta.getName() + "--" + cloudMeta.getMeta().get("uid"));
+                                break;
+                            case Dropbox.DROPBOX:
+                                cloudsUsed.add(cloudMeta.getName() + "--" + cloudMeta.getMeta().get("email"));
+                                break;
+                        }
                     } catch(Exception e) {
                         Log.e(TAG, "Exception while uploading File " + cloudFilePath + " to " +
                                 cloudMeta.getName());

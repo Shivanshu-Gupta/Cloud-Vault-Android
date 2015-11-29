@@ -30,7 +30,6 @@ import com.cloudsecurity.cloudvault.util.DirectoryChooserDialog;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -138,26 +137,28 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
             public void onReceive(Context context, Intent intent) {
                 if(intent !=null) {
                     switch (intent.getAction()) {
-                        case Dropbox.UID :
+                        case AccountInfo.ACCOUNT_INFO :
                             long dbxID = intent.getLongExtra("uid", 0);
                             Log.v(TAG, "CloudListFragment : onViewCreated : uid " + String.valueOf(dbxID));
                             if(dbxID != 0) {
                                 String uid = Long.toString(dbxID);
+                                String email = intent.getStringExtra("email");
                                 newCloudMeta.getMeta().put("uid", uid);
+                                newCloudMeta.getMeta().put("email", email);
                                 addNewCloud(newCloudMeta);
                             } else {
                                 showToast("Failed to add new Dropbox cloud.");
                             }
                             break;
-                        case AccountInfo.FETCH_UID_FAILED :
+                        case AccountInfo.FETCH_ACCOUNT_FAILED:
                             showToast("Failed to add new Dropbox cloud.");
                             break;
                     }
                 }
             }
         };
-        filter = new IntentFilter(Dropbox.UID);
-        filter.addAction(AccountInfo.FETCH_UID_FAILED);
+        filter = new IntentFilter(AccountInfo.ACCOUNT_INFO);
+        filter.addAction(AccountInfo.FETCH_ACCOUNT_FAILED);
     }
 
     //TODO: show this dialog when the user tries to delete a cloud
@@ -313,7 +314,7 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
                     newCloudMeta = new CloudMeta(cloudSharedPref.getNextID(activity), Dropbox.DROPBOX, meta);
                     //start the service to fetch the UID
                     Intent intent = new Intent(getActivity(), AccountInfo.class);
-                    intent.setAction(AccountInfo.ACTION_FETCH_UID);
+                    intent.setAction(AccountInfo.ACTION_FETCH_ACCOUNT);
                     intent.putExtra(AccountInfo.ACCESS_SECRET_NAME, oauth2AccessToken);
                     getActivity().startService(intent);
                 } else {
