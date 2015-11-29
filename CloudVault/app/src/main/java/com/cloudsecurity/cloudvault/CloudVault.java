@@ -128,7 +128,8 @@ public class CloudVault extends AppCompatActivity implements CloudListFragment.O
     public void onCloudDeleted(String genericName) {
         Log.v(TAG, "AddCloud : onCloudAdded");
         client.updateClouds();
-        client.uploadTable(this);
+        //upload when passed null as a parameter just uploads the file.
+        client.upload(null);
         client.updateFileCloudLists(genericName);
     }
 

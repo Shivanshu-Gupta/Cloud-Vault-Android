@@ -2,15 +2,18 @@ package com.cloudsecurity.cloudvault;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
 import android.database.DatabaseErrorHandler;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.hardware.SensorManager;
+import android.util.Log;
 
 /**
  * Created by Shivanshu Gupta on 19-Sep-15.
  */
 public class DatabaseHelper extends SQLiteOpenHelper{
+    private static final String TAG = "CloudVault";
     private static DatabaseHelper db;
     public static final String DATABASE_NAME="vault.db";
     private static final int SCHEMA=1;
@@ -28,6 +31,13 @@ public class DatabaseHelper extends SQLiteOpenHelper{
         if(db==null) {
             db = new DatabaseHelper(context.getApplicationContext());
         }
+        return db;
+    }
+
+    public static synchronized DatabaseHelper getInstanceFresh(Context context) {
+        db = new DatabaseHelper(context.getApplicationContext());
+        Cursor cur = db.getReadableDatabase().rawQuery("SELECT  * FROM " + TABLE, null);
+        Log.v(TAG, "DatabaseHelper : File Count: " + cur.getCount());
         return db;
     }
 

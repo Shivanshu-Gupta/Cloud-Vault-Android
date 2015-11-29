@@ -179,10 +179,15 @@ public class Files extends ListFragment {
             public void onReceive(Context context, Intent intent) {
                 if(intent !=null) {
                     final String action = intent.getAction();
-                    if (action.equals(VaultClient.FILE_UPLOADED)
-                            || action.equals(VaultClient.FILE_DELETED)
-                            || action.equals(VaultClient.FILES_DB_SYNCED))
+                    if (action.equals(VaultClient.FILE_UPLOADED) || action.equals(VaultClient.FILE_DELETED)) {
+                        Log.v(TAG, "Files : Reloading files list");
                         task = new LoadCursorTask().execute();
+                    } else if(action.equals(VaultClient.FILES_DB_SYNCED)) {
+                        Log.v(TAG, "Files : Reloading files list");
+                        db.close();
+                        db = DatabaseHelper.getInstanceFresh(getActivity());
+                        task = new LoadCursorTask().execute();
+                    }
                 }
             }
         };
