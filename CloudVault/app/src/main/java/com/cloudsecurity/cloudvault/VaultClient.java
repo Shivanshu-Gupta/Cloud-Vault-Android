@@ -781,4 +781,9 @@ public class VaultClient extends Service {
         Log.v(TAG, "VaultClient : onRebind");
         super.onRebind(intent);
     }
+
+    void setCloudDanger(int x)
+    {
+        cloudDanger = x;
+    }
 }
