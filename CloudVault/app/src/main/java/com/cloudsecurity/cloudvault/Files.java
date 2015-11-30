@@ -364,8 +364,6 @@ public class Files extends ListFragment {
                                             DatabaseHelper.CLOUDLIST},
                                     null, null, null, null, DatabaseHelper.FILENAME);
 
-            db.close();
-
             result.getCount();
             //return the cursor obtained
             return (result);
@@ -377,7 +375,9 @@ public class Files extends ListFragment {
         protected Cursor doInBackground(Void... params) {
 
             //return the cursor obtained from doing the query
-            return (doQuery());
+            Cursor result = doQuery();
+            db.close();
+            return result;
         }
     }
 
