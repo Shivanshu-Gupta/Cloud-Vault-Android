@@ -364,6 +364,8 @@ public class Files extends ListFragment {
                                             DatabaseHelper.CLOUDLIST},
                                     null, null, null, null, DatabaseHelper.FILENAME);
 
+            db.close();
+
             result.getCount();
             //return the cursor obtained
             return (result);
