@@ -499,7 +499,7 @@ public class VaultClient extends Service {
             byte[] buffer = new byte[1024];
             int bytes_read;
             while (-1 != (bytes_read = fis.read(buffer, 0, buffer.length))) {
-                bos.write(buffer, bos.size(), bytes_read);
+                bos.write(buffer, 0, bytes_read);
             }
             dbData = bos.toByteArray();
             int dbSize = dbData.length;
