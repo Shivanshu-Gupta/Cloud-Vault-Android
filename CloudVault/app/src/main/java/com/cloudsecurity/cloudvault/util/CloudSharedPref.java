@@ -51,6 +51,7 @@ public class CloudSharedPref {
 	}
 
 	public void removeCloud(Context context, CloudMeta cloudMeta) {
+		Log.v(TAG, "CloudSharedPref : removeClouds");
 		ArrayList<CloudMeta> clouds = getClouds(context);
 		if (clouds != null) {
 			clouds.remove(cloudMeta);

@@ -73,7 +73,6 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
     private OnFragmentInteractionListener mListener;
 
     private Button addCloudButton;
-    private Button saveButton;
 
     private CloudMeta newCloudMeta;
 
@@ -191,25 +190,27 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
         AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
         Log.i("ContextMenu", "OnContextItem Selected");
 //        RelativeLayout selectedRow = ((RelativeLayout) info.targetView);
-        int position = info.position;
+        int pos = info.position;
 //        String cloudname = ((TextView) selectedRow.getChildAt(0)).getText().toString();
         switch(item.getItemId()) {
             case R.id.delete_cloud:
-                mListener.onCloudDeleted(cloudMetas.get(position).getGenericName());
+                showDeleteCloudsDialog(pos);
                 return true;
             default:
                 return super.onContextItemSelected(item);
         }
     }
 
-    //TODO: show this dialog when the user tries to delete a cloud
-    private void showSaveCloudsDialog() {
+    private void showDeleteCloudsDialog(final int pos) {
         DialogInterface.OnClickListener dialogClickListener = new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int which) {
                 switch (which) {
                     case DialogInterface.BUTTON_POSITIVE:
                         // Yes button clicked
-                        mListener.onCloudAdded();
+                        CloudMeta cloudMeta = cloudMetas.get(pos);
+                        String cloudGenericName = cloudMeta.getGenericName();
+                        removeCloud(cloudMeta);
+                        mListener.onCloudDeleted(cloudGenericName);
                         break;
 
                     case DialogInterface.BUTTON_NEGATIVE:
@@ -381,6 +382,13 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
         }
 
         Toast.makeText(activity, "New Cloud Added", Toast.LENGTH_SHORT).show();
+    }
+
+    public void removeCloud(CloudMeta cloudMeta) {
+        cloudSharedPref.removeCloud(activity, cloudMeta);
+        cloudListAdapter.remove(cloudMeta);
+
+        Toast.makeText(activity, "Cloud Deleted", Toast.LENGTH_SHORT).show();
     }
 
     public void showAlert(String title, String message) {

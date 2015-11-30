@@ -61,6 +61,7 @@ public class VaultClient extends Service {
     public static final String FILE_UPLOADED = "com.cloudsecurity.cloudvault.action.FILE_UPLOADED";
     public static final String FILE_DELETED = "com.cloudsecurity.cloudvault.action.FILE_DELETED";
     public static final String FILES_DB_SYNCED = "com.cloudsecurity.cloudvault.action.FILES_DB_SYNCED";
+    public static final String FILE_CLOUDLISTS_UPDATED = "com.cloudsecurity.cloudvault.action.FILE_CLOUDLISTS_UPDATED";
     public static final String DOWNLOADS_DIR = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getPath();
 
     public static final String DB_META = "dbmeta.txt";
@@ -707,6 +708,13 @@ public class VaultClient extends Service {
     }
 
     private class FileCloudsListsUpdateTask extends AsyncTask<String, Void, Void> {
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+            Log.i(TAG, "Files' cloudLists updated, sending out bcast");
+            Intent intent = new Intent(FILE_CLOUDLISTS_UPDATED);
+            mLocalBroadcastManager.sendBroadcast(intent);
+        }
 
         @Override
         protected Void doInBackground(String... params) {
@@ -723,7 +731,7 @@ public class VaultClient extends Service {
                         cloudsUsedList = gson.fromJson(cur.getString(cur.getColumnIndex(DatabaseHelper.CLOUDLIST)), String[].class);
                         cloudsUsed.addAll(Arrays.asList(cloudsUsedList));
                         cloudsUsed.remove(params[0]);
-                        cloudsUsedList = (String[]) cloudsUsed.toArray();
+                        cloudsUsedList = cloudsUsed.toArray(new String[cloudsUsed.size()]);
                         updateFile.put(DatabaseHelper.CLOUDLIST, gson.toJson(cloudsUsedList));
                         db.getWritableDatabase().update(DatabaseHelper.TABLE, updateFile,
                                 DatabaseHelper.FILENAME + " = ?", new String[]{fileName});

@@ -3,6 +3,7 @@ package com.cloudsecurity.cloudvault.util;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -10,12 +11,14 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
+import com.cloudsecurity.cloudvault.DatabaseHelper;
 import com.cloudsecurity.cloudvault.R;
 import com.cloudsecurity.cloudvault.VaultClient;
 import com.cloudsecurity.cloudvault.cloud.CloudListFragment;
@@ -33,8 +36,11 @@ public class AddCloud extends AppCompatActivity implements CloudListFragment.OnF
     boolean mBound;
     private ServiceConnection mConnection;
 
+    private LocalBroadcastManager mLocalBroadcastManager = null;
+    private BroadcastReceiver receiver = null;
+    private IntentFilter filter;
+
     private Fragment contentFragment;
-    private IntentFilter filter = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,10 +51,8 @@ public class AddCloud extends AppCompatActivity implements CloudListFragment.OnF
         contentFragment = new CloudListFragment();
         setFragmentTitle(R.string.clouds);
         switchContent(contentFragment, CloudListFragment.ARG_ITEM_ID);
-//        filter = new IntentFilter(Dropbox.LOGGED_IN);
-//        filter.addAction(Dropbox.LOGGED_OUT);
-        mConnection = new ServiceConnection() {
 
+        mConnection = new ServiceConnection() {
             @Override
             public void onServiceConnected(ComponentName className,
                                            IBinder service) {
@@ -56,12 +60,26 @@ public class AddCloud extends AppCompatActivity implements CloudListFragment.OnF
                 client = binder.getService();
                 mBound = true;
             }
-
             @Override
             public void onServiceDisconnected(ComponentName arg0) {
                 mBound = false;
             }
         };
+
+        mLocalBroadcastManager =  LocalBroadcastManager.getInstance(this);
+        receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if(intent !=null) {
+                    final String action = intent.getAction();
+                    if(action.equals(VaultClient.FILE_CLOUDLISTS_UPDATED)) {
+                        // cloudLists have been updated, databases needs to be uploaded
+                        client.upload(null);
+                    }
+                }
+            }
+        };
+        filter = new IntentFilter(VaultClient.FILE_CLOUDLISTS_UPDATED);
     }
 
     @Override
@@ -100,17 +118,19 @@ public class AddCloud extends AppCompatActivity implements CloudListFragment.OnF
     @Override
     public void onCloudAdded() {
         // TODO : do whatever might need to be done here
-        Log.v(TAG, "AddCloud : onCloudDeleted");
+        Log.v(TAG, "AddCloud : onCloudAdded");
         client.updateClouds();
-        client.uploadTable(this);
+        client.upload(null);
     }
 
     @Override
     public void onCloudDeleted(String genericName) {
-        Log.v(TAG, "AddCloud : onCloudAdded");
+        Log.v(TAG, "AddCloud : onCloudDeleted");
         client.updateClouds();
-        client.uploadTable(this);
         client.updateFileCloudLists(genericName);
+
+        //database upload takes place after client bcasts that it's done updatinf cloudlists.
+//        client.upload(null);
     }
 
     @Override

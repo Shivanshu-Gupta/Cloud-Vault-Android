@@ -128,9 +128,10 @@ public class CloudVault extends AppCompatActivity implements CloudListFragment.O
     public void onCloudDeleted(String genericName) {
         Log.v(TAG, "AddCloud : onCloudAdded");
         client.updateClouds();
-        //upload when passed null as a parameter just uploads the file.
-        client.upload(null);
         client.updateFileCloudLists(genericName);
+
+        //database upload takes place after client bcasts that it's done updatinf cloudlists.
+//        client.upload(null);
     }
 
     @Override
