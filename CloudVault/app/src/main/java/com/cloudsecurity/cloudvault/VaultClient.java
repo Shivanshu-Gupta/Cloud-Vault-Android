@@ -13,6 +13,7 @@ import android.os.Environment;
 import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.cloudsecurity.cloudvault.cloud.Cloud;
 import com.cloudsecurity.cloudvault.cloud.CloudMeta;
@@ -351,6 +352,17 @@ public class VaultClient extends Service {
             }
             return null;
         }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            showToast("File Downloaded");
+        }
+
+    }
+
+    private void showToast(String msg) {
+        Toast error = Toast.makeText(this, msg, Toast.LENGTH_LONG);
+        error.show();
     }
 
     private void downloadFile(Context context, String cloudFilePath, String writePath, long fileSize) {
