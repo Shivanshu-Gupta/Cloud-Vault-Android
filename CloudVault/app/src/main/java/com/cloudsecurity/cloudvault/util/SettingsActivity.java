@@ -65,10 +65,10 @@ public class SettingsActivity extends PreferenceActivity implements SharedPrefer
             startActivity(testIntent);
         }
         else if(key.equals("endangered_list")) {
-            String selectedFont=sharedPreferences.getString("endangered_list",null);
-//            if("Very small text".equalsIgnoreCase(selectedFont)) {
-                Toast.makeText(getApplicationContext(),selectedFont + ":",Toast.LENGTH_SHORT).show();
-//            }
+            String dataReceived=sharedPreferences.getString("endangered_list",null);
+            int num = Integer.getInteger(dataReceived);
+            Toast.makeText(getApplicationContext(),num,Toast.LENGTH_SHORT).show();
+            //TODO calling setCloudDanger in VaultClient
         }
     }
 
