@@ -407,6 +407,8 @@ public class VaultClient extends Service {
             byte dataNew[] = dataDecoder.dataArray();
             FileOutputStream fos = new FileOutputStream(writePath);
             fos.write(dataNew);
+            fos.flush();
+            fos.close();
         } catch (Exception e) {
             Log.e(TAG, "Exception in downloading " + writePath, e);
         }
@@ -482,6 +484,8 @@ public class VaultClient extends Service {
 
     public void uploadTable(Context context) {
         Log.v(TAG, "VaultClient : uploadTable");
+        //first close the database. Hopefully this persists the database to the file system.
+        db.close();
         byte[] dbData;
         String DB_NAME = DatabaseHelper.DATABASE_NAME, DB_PATH;
         if (android.os.Build.VERSION.SDK_INT >= 17) {
@@ -495,7 +499,7 @@ public class VaultClient extends Service {
             byte[] buffer = new byte[1024];
             int bytes_read;
             while (-1 != (bytes_read = fis.read(buffer, 0, buffer.length))) {
-                bos.write(buffer, 0, bytes_read);
+                bos.write(buffer, bos.size(), bytes_read);
             }
             dbData = bos.toByteArray();
             int dbSize = dbData.length;
@@ -512,11 +516,10 @@ public class VaultClient extends Service {
             byte[] dbMetaData = bos.toByteArray();
 
             updateDBMetaFile(dbHash, dbSize);
-//            TinyUploadTask dbMetaUpload = new TinyUploadTask(dbMetaData, DB_META);
-//            dbMetaUpload.execute();
             tinyUploadFile(context, dbMetaData, DB_META);
 
-            uploadFile(context, new File(DB_PATH), DB_NAME);
+//            uploadFile(context, new File(DB_PATH), DB_NAME);
+            tinyUploadFile(context, dbData, DB_NAME);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
             Log.e(TAG, "VaultClient : uploadTable : database file not found");
@@ -533,17 +536,20 @@ public class VaultClient extends Service {
         boolean databaseChanged = false;
         //MD5 hashes are 128 bit or 16 bytes long
         byte[] localDBHash = new byte[16];
-        long localDBSize = -1;
+        long localDBSize;
         String DB_META_PATH, DB_PATH;
         String DB_NAME = DatabaseHelper.DATABASE_NAME;
 
         if (android.os.Build.VERSION.SDK_INT >= 17) {
             DB_META_PATH = this.getApplicationInfo().dataDir + "/" + DB_META;
-            DB_PATH = this.getApplicationInfo().dataDir + "/databases/" + DB_NAME;
+            DB_PATH = this.getApplicationInfo().dataDir + "/databases/" + "vault.db";
+//            DB_PATH = this.getDatabasePath(DB_NAME).getPath();
+//            DB_PATH = Environment.DIRECTORY_DOWNLOADS + "/" + DB_NAME;
         } else {
             DB_META_PATH = this.getFilesDir() + "/" + DB_META;
             DB_PATH = this.getFilesDir() + this.getPackageName() + "/databases/" + DB_NAME;
         }
+        Log.v(TAG, "VaultClient : DBPATH : " + DB_PATH);
 
         try {
             DataInputStream in = new DataInputStream((new FileInputStream(DB_META_PATH)));
@@ -552,13 +558,14 @@ public class VaultClient extends Service {
             in.close();
         } catch (IOException e) {
             Log.w(TAG, "VaultClient : downloadTable : could not open existing dbMeta.txt: " + e.getLocalizedMessage());
+            localDBSize = -1;
         } catch (Exception e) {
             Log.e(TAG, "VaultClient : downloadTable : could not get local db meta");
             localDBSize = -1;
         }
-//        TinyDownloadTask dbMetaDownload = new TinyDownloadTask(DB_META, DB_META_PATH);
-//        dbMetaDownload.execute(this);
+
         tinyDownloadFile(context, DB_META, DB_META_PATH);
+
         try {
             DataInputStream in = new DataInputStream(new FileInputStream(
                     DB_META_PATH));
@@ -574,7 +581,10 @@ public class VaultClient extends Service {
                     + Arrays.toString(downloadedDBHash));
             if (databaseChanged) {
                 Log.v(TAG, "table hash mismatch. downloading database.");
-                downloadFile(context, DB_NAME, DB_PATH, downloadedDBSize);
+                database = db.getWritableDatabase();
+                database.close();
+//                downloadFile(context, DB_NAME, DB_PATH, downloadedDBSize);
+                tinyDownloadFile(context, DB_NAME, DB_PATH);
             }
             in.close();
         } catch (IOException e) {
@@ -620,8 +630,14 @@ public class VaultClient extends Service {
     private void tinyUploadFile(Context context, byte[] data, String cloudFilePath) {
         try {
             Log.i(TAG, "VaultClient : TinyUploadTask : " + cloudFilePath);
+            int idx = 0;
             for (Cloud cloud : clouds) {
-                cloud.upload(context, cloudFilePath, data);
+                try{
+                    cloud.upload(context, cloudFilePath, data);
+                } catch (Exception e) {
+                    Log.i(TAG, "Couldn't upload " + cloudFilePath + " to " + cloudMetas.get(idx).getGenericName());
+                }
+                idx++;
             }
         } catch (Exception e) {
             Log.e(TAG, "Exception in uploading File " + cloudFilePath, e);
@@ -641,6 +657,7 @@ public class VaultClient extends Service {
         for (Cloud cloud : clouds) {
             try {
                 bos.write(cloud.download(context, cloudFilePath));
+                break;
             } catch (IOException e) {
                 bos.reset();
 //                    e.printStackTrace();
@@ -650,6 +667,8 @@ public class VaultClient extends Service {
         if (bos.size() > 0 && fos != null) {
             try {
                 fos.write(bos.toByteArray());
+                fos.flush();
+                fos.close();
             } catch (IOException e) {
                 e.printStackTrace();
                 Log.e(TAG, "VaultClient : TinyDownloadTask : unable to write file " + cloudFilePath);
@@ -774,6 +793,7 @@ public class VaultClient extends Service {
     public void onDestroy() {
         Log.v(TAG, "VaultClient : onDestroy");
         super.onDestroy();
+        db.close();
     }
 
     @Override

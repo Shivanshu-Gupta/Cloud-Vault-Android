@@ -547,11 +547,13 @@ public class VaultClientOld extends Service {
         if (android.os.Build.VERSION.SDK_INT >= 17) {
             DB_META_PATH = this.getApplicationInfo().dataDir + "/" + DB_META;
             DB_PATH = this.getApplicationInfo().dataDir + "/databases/" + DB_NAME;
+//            DB_PATH = this.getApplicationInfo().dataDir + "/databases/temp.db";
         } else {
             DB_META_PATH = this.getFilesDir() + "/" + DB_META;
             DB_PATH = this.getFilesDir() + this.getPackageName() + "/databases/" + DB_NAME;
+//            DB_PATH = this.getFilesDir() + this.getPackageName() + "/databases/temp.db";
         }
-
+        Log.v(TAG, "VaultClient : DBPATH : " + DB_PATH);
         try {
             DataInputStream in = new DataInputStream((new FileInputStream(DB_META_PATH)));
             in.read(localDBHash, 0, localDBHash.length);
@@ -581,6 +583,8 @@ public class VaultClientOld extends Service {
                     + Arrays.toString(downloadedDBHash));
             if (databaseChanged) {
                 Log.v(TAG, "table hash mismatch. downloading database.");
+                database = db.getWritableDatabase();
+                database.close();
                 downloadFile(context, DB_NAME, DB_PATH, downloadedDBSize);
             }
             in.close();

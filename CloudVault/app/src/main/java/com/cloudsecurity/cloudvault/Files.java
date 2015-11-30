@@ -184,7 +184,6 @@ public class Files extends ListFragment {
                         task = new LoadCursorTask().execute();
                     } else if(action.equals(VaultClient.FILES_DB_SYNCED)) {
                         Log.v(TAG, "Files : Reloading files list");
-                        db.close();
                         db = DatabaseHelper.getInstanceFresh(getActivity());
                         task = new LoadCursorTask().execute();
                     }
@@ -364,6 +363,8 @@ public class Files extends ListFragment {
                                             DatabaseHelper.SIZE,
                                             DatabaseHelper.CLOUDLIST},
                                     null, null, null, null, DatabaseHelper.FILENAME);
+
+            db.close();
 
             result.getCount();
             //return the cursor obtained
