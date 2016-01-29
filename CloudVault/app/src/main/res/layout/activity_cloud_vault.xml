@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     tools:context=".CloudVault">
 
-    <!--<fragment android:name="com.cloudsecurity.cloudvault.Files"-->
+    <!--<fragment android:name="com.cloudsecurity.cloudvault.FilesFragmentFragment"-->
         <!--android:id="@+id/content_frame"-->
         <!--android:layout_width="match_parent"-->
         <!--android:layout_height="fill_parent" />-->

@@ -1,11 +1,8 @@
 package com.cloudsecurity.cloudvault.cloud;
 
-import android.os.Parcel;
-import android.os.Parcelable;
-
 import com.cloudsecurity.cloudvault.cloud.dropbox.Dropbox;
+import com.cloudsecurity.cloudvault.cloud.foldercloud.FolderCloud;
 
-import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**

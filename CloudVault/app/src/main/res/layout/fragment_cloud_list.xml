@@ -2,7 +2,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.cloudsecurity.cloudvault.Files">
+    tools:context="com.cloudsecurity.cloudvault.FilesFragment">
     <ListView
         android:id="@+id/list_clouds"
         android:layout_width="match_parent"

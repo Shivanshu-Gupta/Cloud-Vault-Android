@@ -2,7 +2,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.cloudsecurity.cloudvault.util.SettingsActivity">
+    tools:context="com.cloudsecurity.cloudvault.settings.SettingsActivity">
 
     <!-- TODO: Update blank fragment layout -->
 

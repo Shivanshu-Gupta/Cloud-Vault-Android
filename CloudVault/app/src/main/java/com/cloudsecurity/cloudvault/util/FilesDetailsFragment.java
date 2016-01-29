@@ -1,21 +1,21 @@
 package com.cloudsecurity.cloudvault.util;
 
-import java.util.ArrayList;
-
 /**
  * Created by Noman on 11/28/2015.
  */
 public class FilesDetailsFragment {
     String fileName;
-    String fileSize;
+    long fileSize;
     String[] cloudList;
+    int minClouds;
     String timeStamp;
 
-    public FilesDetailsFragment(String name, String size, String[] list, String time)
+    public FilesDetailsFragment(String name, long size, String[] list, int minClouds, String time)
     {
         fileName = name;
         fileSize = size;
         cloudList = list;
+        this.minClouds = minClouds;
         timeStamp = time;
     }
 
@@ -25,25 +25,26 @@ public class FilesDetailsFragment {
         String sizeDetails = getSizeMessage();
         String timeDetails = getTimeMessage();
         String cloudDetails = getCloudMessage();
-        answer = sizeDetails + "\n" + timeDetails + "\n" + cloudDetails;
+        String minCloudsDetails = getMinCloudsMessage();
+        answer = sizeDetails + "\n" + timeDetails + "\n" + cloudDetails + "\n" + minCloudsDetails;
         return answer;
     }
 
     String getSizeMessage()
     {
-        String reply = "FILE SIZE : ";
-        if(fileSize.equals(""))
-            reply = reply + "Not Available";
-        else
+        if(fileSize > 0){
+            String reply = "FILE SIZE : ";
             reply = reply + fileSize + " bytes\n";
-        return reply;
+            return reply;
+        }
 
+        return "\n";
     }
     String getTimeMessage()
     {
-        String reply = "LAST MODIFIED\n";
+        String reply = "LAST MODIFIED : ";
         if(timeStamp.equals(""))
-            reply = reply + "Not Available";
+            reply = reply + "Not Available\n";
         else
             reply = reply + timeStamp + "\n";
         return reply;
@@ -51,9 +52,9 @@ public class FilesDetailsFragment {
 
     String getCloudMessage()
     {
-        String reply = "CLOUD DETAILS\n";
+        String reply = "STORED ON : \n";
         if(cloudList == null || cloudList.equals("")) {
-            reply = reply + "Not Available";
+            reply = reply + "Not Available\n";
         } else {
             int index = 1;
             for(String cloud : cloudList){
@@ -63,5 +64,15 @@ public class FilesDetailsFragment {
             }
         }
         return reply;
+    }
+
+    String getMinCloudsMessage() {
+        if(minClouds > 0){
+            String reply = "MINIMUM CLOUD COUNT : ";
+            reply = reply + minClouds + "\n";
+            return reply;
+        }
+
+        return "\n";
     }
 }

@@ -4,13 +4,11 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.DialogFragment;
 import android.app.Fragment;
-import android.app.ListFragment;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.database.Cursor;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v4.content.LocalBroadcastManager;
@@ -24,19 +22,15 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ListView;
-import android.widget.RelativeLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import com.cloudsecurity.cloudvault.DatabaseHelper;
 import com.cloudsecurity.cloudvault.R;
 import com.cloudsecurity.cloudvault.cloud.dropbox.AccountInfo;
 import com.cloudsecurity.cloudvault.cloud.dropbox.Dropbox;
 import com.cloudsecurity.cloudvault.cloud.dropbox.DropboxAuthenticator;
+import com.cloudsecurity.cloudvault.cloud.foldercloud.FolderCloud;
 import com.cloudsecurity.cloudvault.util.CloudSharedPref;
-import com.cloudsecurity.cloudvault.util.DirectoryChooserDialog;
-import com.cloudsecurity.cloudvault.util.FilesDetailsFragment;
-import com.google.gson.Gson;
+import com.cloudsecurity.cloudvault.cloud.foldercloud.DirectoryChooserDialog;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -127,13 +121,6 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
             }
         });
 
-//        saveButton = (Button) view.findViewById(R.id.save_clouds);
-//        saveButton.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                showSaveCloudsDialog();
-//            }
-//        });
         return view;
     }
 
@@ -194,7 +181,12 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
 //        String cloudname = ((TextView) selectedRow.getChildAt(0)).getText().toString();
         switch(item.getItemId()) {
             case R.id.delete_cloud:
-                showDeleteCloudsDialog(pos);
+                if (cloudMetas.size() <= 4) {
+                    showAlert("Delete Not Possible!", "Cloud Vault requires at least 4 clouds to function properly. \n" +
+                            "So first add a substitute cloud to delete this one.");
+                } else {
+                    showDeleteCloudsDialog(pos);
+                }
                 return true;
             default:
                 return super.onContextItemSelected(item);
@@ -306,6 +298,7 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
         }
     }
 
+    // FOLDERCLOUD
     @Override
     public void onChosenDir(String chosenDir) {
         try {
@@ -339,6 +332,7 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
         }
     }
 
+    //DROPBOX
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
 //        cloudSharedPref = new CloudSharedPref(activity);

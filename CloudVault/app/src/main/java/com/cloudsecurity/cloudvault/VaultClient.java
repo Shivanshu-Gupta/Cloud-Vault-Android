@@ -17,7 +17,7 @@ import android.widget.Toast;
 
 import com.cloudsecurity.cloudvault.cloud.Cloud;
 import com.cloudsecurity.cloudvault.cloud.CloudMeta;
-import com.cloudsecurity.cloudvault.cloud.FolderCloud;
+import com.cloudsecurity.cloudvault.cloud.foldercloud.FolderCloud;
 import com.cloudsecurity.cloudvault.cloud.dropbox.Dropbox;
 import com.cloudsecurity.cloudvault.util.CloudSharedPref;
 import com.cloudsecurity.cloudvault.util.Pair;
@@ -42,6 +42,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -81,17 +82,9 @@ public class VaultClient extends Service {
     private DatabaseHelper db = null;
     private SQLiteDatabase database;
 
-//    private Context mContext;
-//
-//    private String mErrorMsg;
-//
-//    public VaultClient(Context mContext) {
-//        this.mContext = mContext;
-//    }
-//
-//    public VaultClient() {
-//        super();
-//    }
+    //MD5 hashes are 128 bit or 16 bytes long
+    byte[] localDBHash = new byte[16];
+    long localDBSize = -1;
 
     @Override
     public void onCreate() {
@@ -214,20 +207,19 @@ public class VaultClient extends Service {
                 long fileSize = file.length();
                 downloadTable(context);
 
-//              insertTask = new InsertTask();
-//              insertTask.execute(newFile);
-
                 String[] cloudsUsed = uploadFile(context, file, cloudFilePath);
                 Log.v(TAG, "cloudsUsed: " + cloudsUsed);
                 Gson gson = new Gson();
                 String cloudListString = gson.toJson(cloudsUsed);
-                String timeStamp = java.text.DateFormat.getDateTimeInstance().format(Calendar.getInstance().getTime());
+                int minClouds = cloudsUsed.length - cloudDanger;
+                Timestamp timestamp = new Timestamp(System.currentTimeMillis());
 
                 ContentValues newFile = new ContentValues(4);
                 newFile.put(DatabaseHelper.FILENAME, cloudFilePath);
                 newFile.put(DatabaseHelper.SIZE, fileSize);
                 newFile.put(DatabaseHelper.CLOUDLIST, cloudListString);
-                newFile.put(DatabaseHelper.TIMESTAMP, timeStamp);
+                newFile.put(DatabaseHelper.MINCLOUDS, minClouds);
+                newFile.put(DatabaseHelper.TIMESTAMP, timestamp.toString());
 
                 insertRecord(newFile);
                 uploadTable(context);
@@ -322,13 +314,13 @@ public class VaultClient extends Service {
                 mLocalBroadcastManager.sendBroadcast(intent);
             } else {
                 String writePath;
-                long fileSize;
                 downloadTable(context);
                 String[] cols = new String[]{"ROWID AS _id",
-                        DatabaseHelper.FILENAME,
-                        DatabaseHelper.SIZE};
-                Cursor cursor = db.getReadableDatabase().query(true, DatabaseHelper.TABLE, cols
-                        , DatabaseHelper.FILENAME + "=?",
+                        DatabaseHelper.SIZE,
+                        DatabaseHelper.CLOUDLIST,
+                        DatabaseHelper.MINCLOUDS};
+                Cursor cursor = db.getReadableDatabase().query(true, DatabaseHelper.FILES_TABLE,
+                        cols, DatabaseHelper.FILENAME + "=?",
                         new String[]{cloudFilePath},
                         null, null, null, null);
 
@@ -337,9 +329,11 @@ public class VaultClient extends Service {
 //            writePath = DOWNLOADS_DIR + '/' + cloudFilePath;
                     writePath = DOWNLOADS_DIR + "/SURA/" + cloudFilePath;                   //temporarily
 
-                    String fileName = cursor.getString(cursor.getColumnIndex(DatabaseHelper.FILENAME));
-                    fileSize = cursor.getLong(cursor.getColumnIndex(DatabaseHelper.SIZE));
+                    long fileSize = cursor.getLong(cursor.getColumnIndex(DatabaseHelper.SIZE));
+                    String cloudList = cursor.getString(cursor.getColumnIndex(DatabaseHelper.CLOUDLIST));
+                    int minClouds = cursor.getInt(cursor.getColumnIndex(DatabaseHelper.MINCLOUDS));
                     cloudFilePath = (new PathManip(cloudFilePath)).toCloudFormat();
+                    //TODO : use cloudList and minClouds!!
                     downloadFile(context, cloudFilePath, writePath, fileSize);
                 } else {
                     //may happen that the file is not there in the db as it's is being downloaded fresh
@@ -439,21 +433,19 @@ public class VaultClient extends Service {
             Context context = params[0];
             downloadTable(context);
             String[] cols = new String[]{"ROWID AS _id",
-                    DatabaseHelper.FILENAME,
-                    DatabaseHelper.SIZE};
-            Cursor cursor = db.getReadableDatabase().query(true, DatabaseHelper.TABLE, cols
+                    DatabaseHelper.SIZE,
+                    DatabaseHelper.CLOUDLIST};
+            Cursor cursor = db.getReadableDatabase().query(true, DatabaseHelper.FILES_TABLE, cols
                     , DatabaseHelper.FILENAME + "=?",
                     new String[]{cloudFilePath},
                     null, null, null, null);
 
             if (cursor != null && cursor.moveToFirst() && cursor.getCount() > 0) {
-                String fileName = cursor.getString(cursor.getColumnIndex(DatabaseHelper.FILENAME));
                 long fileSize = cursor.getLong(cursor.getColumnIndex(DatabaseHelper.SIZE));
+                String cloudList =cursor.getString((cursor.getColumnIndex(DatabaseHelper.CLOUDLIST)));
                 cloudFilePath = (new PathManip(cloudFilePath)).toCloudFormat();
-//                removeTask = new RemoveTask();
-//                removeTask.execute(cloudFilePath);
                 removeRecord(cloudFilePath);
-
+                //TODO : use CloudList!!!
                 deleteFile(context, cloudFilePath, fileSize);
                 uploadTable(context);
             } else {
@@ -497,7 +489,6 @@ public class VaultClient extends Service {
 
     public void uploadTable(Context context) {
         Log.v(TAG, "VaultClient : uploadTable");
-        //first close the database. Hopefully this persists the database to the file system.
         db.close();
         byte[] dbData;
         String DB_NAME = DatabaseHelper.DATABASE_NAME, DB_PATH;
@@ -515,24 +506,28 @@ public class VaultClient extends Service {
                 bos.write(buffer, 0, bytes_read);
             }
             dbData = bos.toByteArray();
-            int dbSize = dbData.length;
-
+            //TODO: dbSize should be long - FIX!
+            long dbSize = dbData.length;
             //get the 128-bit MD5 hash
             MessageDigest digester = MessageDigest.getInstance("MD5");
             digester.update(dbData);
             byte[] dbHash = digester.digest();      //16 bytes
 
             bos.reset();
+
+            // wrap the Bos with a Dos so that size may be written to it.
             DataOutputStream dos = new DataOutputStream(bos);
             dos.write(dbHash);
-            dos.writeInt(dbSize);
+            dos.writeLong(dbSize);
             byte[] dbMetaData = bos.toByteArray();
 
             updateDBMetaFile(dbHash, dbSize);
             tinyUploadFile(context, dbMetaData, DB_META);
 
-//            uploadFile(context, new File(DB_PATH), DB_NAME);
-            tinyUploadFile(context, dbData, DB_NAME);
+            localDBSize = dbSize;
+            localDBHash = dbHash;
+            //TODO: change this tiny upload and download to regular
+            uploadFile(context, new File(DB_PATH), DB_NAME);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
             Log.e(TAG, "VaultClient : uploadTable : database file not found");
@@ -547,9 +542,7 @@ public class VaultClient extends Service {
     private void downloadTable(Context context) {
         Log.v(TAG, "VaultClient : downloadTable");
         boolean databaseChanged = false;
-        //MD5 hashes are 128 bit or 16 bytes long
-        byte[] localDBHash = new byte[16];
-        long localDBSize;
+
         String DB_META_PATH, DB_PATH;
         String DB_NAME = DatabaseHelper.DATABASE_NAME;
 
@@ -564,17 +557,20 @@ public class VaultClient extends Service {
         }
         Log.v(TAG, "VaultClient : DBPATH : " + DB_PATH);
 
-        try {
-            DataInputStream in = new DataInputStream((new FileInputStream(DB_META_PATH)));
-            in.read(localDBHash, 0, localDBHash.length);
-            localDBSize = in.readInt();
-            in.close();
-        } catch (IOException e) {
-            Log.w(TAG, "VaultClient : downloadTable : could not open existing dbMeta.txt: " + e.getLocalizedMessage());
-            localDBSize = -1;
-        } catch (Exception e) {
-            Log.e(TAG, "VaultClient : downloadTable : could not get local db meta");
-            localDBSize = -1;
+        //read the database size and hash from the file only if they haven't been reinitialised.
+        if(localDBSize == -1) {
+            try {
+                DataInputStream in = new DataInputStream((new FileInputStream(DB_META_PATH)));
+                in.read(localDBHash, 0, localDBHash.length);
+                localDBSize = in.readLong();
+                in.close();
+            } catch (IOException e) {
+                Log.w(TAG, "VaultClient : downloadTable : could not open existing dbMeta.txt: " + e.getLocalizedMessage());
+//                localDBSize = -1;
+            } catch (Exception e) {
+                Log.e(TAG, "VaultClient : downloadTable : could not get local db meta");
+//                localDBSize = -1;
+            }
         }
 
         tinyDownloadFile(context, DB_META, DB_META_PATH);
@@ -584,10 +580,12 @@ public class VaultClient extends Service {
                     DB_META_PATH));
             byte[] downloadedDBHash = new byte[16];
             in.read(downloadedDBHash, 0, downloadedDBHash.length);
+
             if (!Arrays.equals(localDBHash, downloadedDBHash) || localDBSize == -1) {
+                //database changed if hashes mismatch or the db file hasn't been created yet.
                 databaseChanged = true;
             }
-            int downloadedDBSize = in.readInt();
+            long downloadedDBSize = in.readLong();
             Log.i(TAG, "VaultClient : downloadTable : Local Files DB: Size=" + localDBSize + " Hash="
                     + Arrays.toString(localDBHash));
             Log.i(TAG, "VaultClient : downloadTable : Files DB on cloud: Size=" + downloadedDBSize + " Hash="
@@ -596,8 +594,12 @@ public class VaultClient extends Service {
                 Log.v(TAG, "table hash mismatch. downloading database.");
                 database = db.getWritableDatabase();
                 database.close();
-//                downloadFile(context, DB_NAME, DB_PATH, downloadedDBSize);
-                tinyDownloadFile(context, DB_NAME, DB_PATH);
+                
+                //TODO: change this tiny upload and download to regular
+                downloadFile(context, DB_NAME, DB_PATH, downloadedDBSize);
+
+                localDBSize = downloadedDBSize;
+                localDBHash = downloadedDBHash;
             }
             in.close();
         } catch (IOException e) {
@@ -606,7 +608,9 @@ public class VaultClient extends Service {
         }
     }
 
-    private boolean updateDBMetaFile(byte[] dbHash, int dbSize) {
+    private boolean updateDBMetaFile(byte[] dbHash, long dbSize) {
+        Log.i(TAG, "VaultClient : updateDBMetaFile : Files DB: Size=" + dbSize + " Hash="
+                + Arrays.toString(dbHash));
         try {
             String DB_META_PATH;
             if (android.os.Build.VERSION.SDK_INT >= 17) {
@@ -618,7 +622,7 @@ public class VaultClient extends Service {
             FileOutputStream fout = new FileOutputStream(DB_META_PATH);
             DataOutputStream dout = new DataOutputStream(fout);
             dout.write(dbHash);
-            dout.writeInt(dbSize);
+            dout.writeLong(dbSize);
 
             dout.flush();
             fout.flush();
@@ -635,7 +639,6 @@ public class VaultClient extends Service {
     }
 
     public void sync() {
-        //TODO: check if downloading the table alone will update the Files List.
         //calling download with null just downloads the table.
         download(null);
     }
@@ -706,14 +709,14 @@ public class VaultClient extends Service {
 
     private void insertRecord(ContentValues... values) {
         database = db.getWritableDatabase();
-        database.insert(DatabaseHelper.TABLE, DatabaseHelper.FILENAME, values[0]);
+        database.insert(DatabaseHelper.FILES_TABLE, DatabaseHelper.FILENAME, values[0]);
         Intent intent = new Intent(FILE_UPLOADED);
         mLocalBroadcastManager.sendBroadcast(intent);
     }
 
     private void removeRecord(String... values) {
         database = db.getWritableDatabase();
-        database.delete(DatabaseHelper.TABLE, DatabaseHelper.FILENAME + "=?",
+        database.delete(DatabaseHelper.FILES_TABLE, DatabaseHelper.FILENAME + "=?",
                 new String[]{values[0]});
         Intent intent = new Intent(FILE_DELETED);
         mLocalBroadcastManager.sendBroadcast(intent);
@@ -730,7 +733,7 @@ public class VaultClient extends Service {
 
         @Override
         protected Void doInBackground(String... params) {
-            Cursor cur = db.getWritableDatabase().rawQuery("SELECT * FROM " + DatabaseHelper.TABLE, null);
+            Cursor cur = db.getWritableDatabase().rawQuery("SELECT * FROM " + DatabaseHelper.FILES_TABLE, null);
             HashSet<String> cloudsUsed = new HashSet<>();
             String[] cloudsUsedList;
             ContentValues updateFile = new ContentValues(1);
@@ -745,7 +748,7 @@ public class VaultClient extends Service {
                         cloudsUsed.remove(params[0]);
                         cloudsUsedList = cloudsUsed.toArray(new String[cloudsUsed.size()]);
                         updateFile.put(DatabaseHelper.CLOUDLIST, gson.toJson(cloudsUsedList));
-                        db.getWritableDatabase().update(DatabaseHelper.TABLE, updateFile,
+                        db.getWritableDatabase().update(DatabaseHelper.FILES_TABLE, updateFile,
                                 DatabaseHelper.FILENAME + " = ?", new String[]{fileName});
                     } while (cur.moveToNext());
                 }
@@ -759,7 +762,7 @@ public class VaultClient extends Service {
             Cursor result =
                     db
                             .getReadableDatabase()
-                            .query(DatabaseHelper.TABLE,
+                            .query(DatabaseHelper.FILES_TABLE,
                                     new String[]{"ROWID AS _id",
                                             DatabaseHelper.FILENAME,
                                             DatabaseHelper.SIZE},
@@ -771,38 +774,6 @@ public class VaultClient extends Service {
         }
     }
 
-    //    private class InsertTask extends BaseTask<ContentValues> {
-//        @Override
-//        public void onPostExecute(Cursor result) {
-//            Intent intent = new Intent(FILE_UPLOADED);
-//            mLocalBroadcastManager.sendBroadcast(intent);
-//            insertTask = null;
-//        }
-//
-//        @Override
-//        protected Cursor doInBackground(ContentValues... values) {
-//            database = db.getWritableDatabase();
-//            database.insert(DatabaseHelper.TABLE, DatabaseHelper.FILENAME, values[0]);
-//            return (doQuery());
-//        }
-//    }
-
-    //    private class RemoveTask extends BaseTask<String> {
-//        @Override
-//        public void onPostExecute(Cursor result) {
-//            Intent intent = new Intent(FILE_DELETED);
-//            mLocalBroadcastManager.sendBroadcast(intent);
-//            removeTask = null;
-//        }
-//
-//        @Override
-//        protected Cursor doInBackground(String... values) {
-//            database = db.getWritableDatabase();
-//            database.delete(DatabaseHelper.TABLE, DatabaseHelper.FILENAME + "=?",
-//                    new String[]{values[0]});
-//            return (doQuery());
-//        }
-//    }
     @Override
     public boolean onUnbind(Intent intent) {
         Log.v(TAG, "VaultClient : onUnbind");
