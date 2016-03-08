@@ -6,6 +6,7 @@ import android.util.Log;
 import android.widget.Toast;
 
 import com.cloudsecurity.cloudvault.CloudVault;
+import com.cloudsecurity.cloudvault.R;
 import com.cloudsecurity.cloudvault.cloud.Cloud;
 import com.cloudsecurity.cloudvault.cloud.CloudMeta;
 import com.dropbox.client2.DropboxAPI;
@@ -30,6 +31,8 @@ import java.io.InputStream;
 public class Dropbox implements Cloud {
     private static final String TAG = "CloudVault";
     public static final String DROPBOX = "DROPBOX";
+    public static final String Dropbox = "Dropbox";
+
     private static final String vaultPath = "/CLOUDVAULT/";
 
     ///////////////////////////////////////////////////////////////////////////
@@ -44,7 +47,9 @@ public class Dropbox implements Cloud {
     ///////////////////////////////////////////////////////////////////////////
 
     public static final String ACCESS_SECRET_NAME = "ACCESS_SECRET";
-    public static final String UID = "com.cloudsecurity.cloudvault.cloud.dropbox.UID";
+    public static final String UID = "UID";
+    public static final String EMAIL = "Email ID";
+
     private CloudMeta meta;
 
     DropboxAPI<AndroidAuthSession> mApi;

@@ -1,0 +1,44 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.cloudsecurity.cloudvault.setup.SetupTwoFragment" >
+
+    <!--<fragment-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:id="@+id/cloud_list_fragment"-->
+        <!--tools:layout="@layout/fragment_cloud_list"-->
+        <!--android:layout_above="@+id/add_cloud_text" />-->
+
+    <FrameLayout
+        android:id="@+id/nested_fragment_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@+id/add_cloud_text">
+
+    </FrameLayout>
+
+
+    <TextView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="@string/add_cloud_create"
+        android:gravity="center_horizontal"
+        android:id="@+id/add_cloud_text"
+        android:padding="5dp"
+        android:layout_centerHorizontal="true"
+        android:layout_above="@+id/complete_button" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/complete"
+        android:id="@+id/complete_button"
+        android:layout_centerHorizontal="true"
+        android:layout_alignParentBottom="true"/>
+
+
+
+</RelativeLayout>

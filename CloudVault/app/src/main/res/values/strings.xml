@@ -17,8 +17,6 @@
     <string name="not_enough_clouds">Not Enough Clouds</string>
     <string name="not_enough_clouds_msg">Less than 4 clouds have been configured. Add more!</string>
     <string name="pick_cloud_type">Select the Cloud Type</string>
-    <!--<string name="dropbox">DROPBOX</string>-->
-    <!--<string name="foldercloud">FOLDERCLOUD</string>-->
     <string name="cloud_added">New Cloud Added</string>
     <string name="foldercloud_chooser_title">Choose the folder to use for Storage.</string>
     <string name="title_activity_dropbox_authenticator">DropboxAuthenticator</string>
@@ -32,5 +30,30 @@
     <string name="setting2Text">Mobile Data</string>
     <string name="save_clouds_btn">Save</string>
     <string name="sync">Sync</string>
+
+<!-- Cloud Titles -->
+    <string name="dropbox_upper">DROPBOX</string>
+    <string name="dropbox_title">Dropbox</string>
+    <string name="foldercloud_upper">FOLDERCLOUD</string>
+    <string name="foldercloud_title">Foldercloud</string>
+    <string name="googledrive_upper">GOOGLEDRIVE</string>
+    <string name="googledrive_title">GoogleDrive</string>
+    <string name="box_upper">BOX</string>
+    <string name="box_title">Box</string>
+
+<!-- SetupOneFragment -->
+    <string name="setup_step_one">Select Install Type</string>
+    <string name="welcome">Welcome to CloudVault</string>
+    <string name="install_type_ques">How would you like to set up the CloudVault on this device?</string>
+    <string name="install_nocreate">Connect to an Existing CloudVault</string>
+    <string name="install_create">Create a new CloudVault</string>
+
+<!-- SetupTwoFragment -->
+    <string name="setup_step_two">Add Clouds</string>
+    <string name="add_cloud_create">Please add at least 4 clouds for CloudVault to function properly.</string>
+    <string name="add_cloud_nocreate">Please add the clouds with which you have configured your CloudVault.</string>
+    <string name="complete">Complete Setup</string>
+    <string name="title_activity_setup">SetupActivity</string>
+    <string name="hello_world">Hello world!</string>
 
 </resources>

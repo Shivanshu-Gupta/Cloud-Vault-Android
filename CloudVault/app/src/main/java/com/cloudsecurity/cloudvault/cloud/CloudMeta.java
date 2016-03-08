@@ -1,6 +1,7 @@
 package com.cloudsecurity.cloudvault.cloud;
 
 import com.cloudsecurity.cloudvault.cloud.dropbox.Dropbox;
+import android.app.Activity;
 import com.cloudsecurity.cloudvault.cloud.foldercloud.FolderCloud;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -12,9 +13,6 @@ public class CloudMeta {
     private int id;
     private String name;
     private ConcurrentHashMap<String, String> meta;
-
-    public CloudMeta() {
-    }
 
     public CloudMeta(int id, String name, ConcurrentHashMap<String,String> meta) {
         this.id = id;
@@ -49,11 +47,11 @@ public class CloudMeta {
     public String getGenericName() {
         String genericName = "";
         switch (name) {
-            case FolderCloud.FOLDERCLOUD:
-                genericName = name + "--" + meta.get("path");
+            case FolderCloud.FolderCloud:
+                genericName = name + "--" + meta.get(FolderCloud.PATH);
                 break;
-            case Dropbox.DROPBOX:
-                genericName = name + "--" + meta.get("uid");
+            case Dropbox.Dropbox:
+                genericName = name + "--" + meta.get(Dropbox.EMAIL);
                 break;
         }
         return genericName;

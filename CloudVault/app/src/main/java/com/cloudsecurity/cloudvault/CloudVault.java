@@ -7,6 +7,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
@@ -15,11 +16,21 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
-import com.cloudsecurity.cloudvault.cloud.CloudListFragment;
 import com.cloudsecurity.cloudvault.util.CloudSharedPref;
 
-public class CloudVault extends AppCompatActivity implements CloudListFragment.OnFragmentInteractionListener {
+import com.cloudsecurity.cloudvault.setup.SetupOneFragment;
+import com.cloudsecurity.cloudvault.setup.SetupTwoFragment;
+
+public class CloudVault extends AppCompatActivity implements SetupOneFragment.OnFragmentInteractionListener,
+        SetupTwoFragment.OnFragmentInteractionListener {
     private static final String TAG = "CloudVault";
+
+    /*
+    * used only when started for the first time
+    * 0 => don't create a new CloudVault
+    * 1 => create a new CloudVault
+    * */
+    boolean mSetupType;
 
     VaultClient client;
     boolean mBound;
@@ -41,10 +52,14 @@ public class CloudVault extends AppCompatActivity implements CloudListFragment.O
             setFragmentTitle(R.string.app_name);
             switchContent(contentFragment, FilesFragment.ARG_ITEM_ID);
         } else {
-            Log.v(TAG, "Not Enough Clouds for functioning. Setting the content to Cloud List Fragment.");
+            /*Log.v(TAG, "Not Enough Clouds for functioning. Setting the content to Cloud List Fragment.");
             contentFragment = new CloudListFragment();
             setFragmentTitle(R.string.clouds);
-            switchContent(contentFragment, CloudListFragment.ARG_ITEM_ID);
+            switchContent(contentFragment, CloudListFragment.ARG_ITEM_ID);*/
+            Log.v(TAG, "Not Enough Clouds for functioning. Setting the content to SetupOneFragment");
+            contentFragment = new SetupOneFragment();
+            setFragmentTitle(R.string.setup_step_one);
+            switchContent(contentFragment, SetupOneFragment.ARG_ITEM_ID);
         }
 
         mConnection = new ServiceConnection() {
@@ -116,37 +131,6 @@ public class CloudVault extends AppCompatActivity implements CloudListFragment.O
         return super.onOptionsItemSelected(item);
     }
 
-    @Override
-    public void onCloudAdded() {
-        // TODO : IMPORTANT : Ask the user if it's the first device and download/upload table accordingly!
-        /*
-        * IDEA:
-        * 1. Keep a shared pref to indicate whether 4 setup has been done like in desktop app.
-        * 2. Ask the user it's teh first device.
-        * If yes then upload the table. If not then download the table after setup.
-        * */
-        Log.v(TAG, "CloudVault : onCloudDeleted");
-        client.updateClouds();
-        //upload when passed null as a parameter just uploads the table.
-        client.upload(null);
-    }
-
-    @Override
-    public void onCloudDeleted(String genericName) {
-        Log.v(TAG, "AddCloud : onCloudAdded");
-        client.updateClouds();
-        client.updateFileCloudLists(genericName);
-
-        //database upload takes place after client bcasts that it's done updating cloudlists.
-//        client.upload(null);
-    }
-
-    @Override
-    public void onCloudsDangerChanged() {
-        Log.v(TAG, "CloudVault : onCloudsDangerChanged");
-        //TODO: update the client's cloudDanger
-    }
-
     public void switchContent(Fragment fragment, String tag) {
         FragmentManager fragmentManager = getFragmentManager();
         while (fragmentManager.popBackStackImmediate());
@@ -193,4 +177,39 @@ public class CloudVault extends AppCompatActivity implements CloudListFragment.O
         super.onRestart();
     }
 
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+    }
+
+    /*
+    * Called by SetupOneFragment when user has selected the install type.
+    * */
+    @Override
+    public void onInstallTypeSelected(boolean create) {
+        Log.v(TAG, "Install type selected. create = " + create);
+        mSetupType = create;
+        contentFragment = SetupTwoFragment.newInstance(create);
+        setFragmentTitle(R.string.setup_step_two);
+        switchContent(contentFragment, SetupTwoFragment.ARG_ITEM_ID);
+    }
+
+    @Override
+    public void onStepTwoCompleted() {
+        Log.v(TAG, "Clouds Added. Finishing CloudVault Setup.");
+        client.updateClouds();
+        if(mSetupType) {
+            // new CloudVault needs to be created - need to upload the table
+            // upload when passed null as a parameter just uploads the table.
+            client.upload(null);
+        } else {
+            // connect to existing CloudVault - download the table from existing CloudVault
+            // download when passed null as a parameter just downloads the table.
+            client.download(null);
+        }
+        Log.v(TAG, "CloudVault Setup Complete. Switching to Files Fragment.");
+        contentFragment = new FilesFragment();
+        setFragmentTitle(R.string.app_name);
+        switchContent(contentFragment, FilesFragment.ARG_ITEM_ID);
+    }
 }

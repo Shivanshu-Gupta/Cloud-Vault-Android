@@ -51,14 +51,12 @@ public class SettingsActivity extends PreferenceActivity implements SharedPrefer
         sharedPref.unregisterOnSharedPreferenceChangeListener(this);
     }
 
-//    @SuppressWarnings("deprecation")
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         Log.v(TAG, "SettingsActivity : onSharedPreferenceChanged : " + key);
         if (key.equals("adding")) {
-//            Toast.makeText(this, "add cloud clicked", Toast.LENGTH_LONG).show();
-            Intent testIntent = new Intent(getApplicationContext(), AddCloud.class);
-            startActivity(testIntent);
+            Intent intent = new Intent(getApplicationContext(), AddCloud.class);
+            startActivity(intent);
         }
         else if(key.equals("endangered_list")) {
             String dataReceived=sharedPreferences.getString("endangered_list",null);

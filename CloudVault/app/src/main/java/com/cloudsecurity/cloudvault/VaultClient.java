@@ -105,11 +105,11 @@ public class VaultClient extends Service {
         if (cloudMetas != null) {
             for (CloudMeta cloudMeta : cloudMetas) {
                 switch (cloudMeta.getName()) {
-                    case Dropbox.DROPBOX:
+                    case Dropbox.Dropbox:
                         cloud = new Dropbox(this, cloudMeta);
                         clouds.add(cloud);
                         break;
-                    case FolderCloud.FOLDERCLOUD:
+                    case FolderCloud.FolderCloud:
                         cloud = new FolderCloud(this, cloudMeta.getMeta().get(FolderCloud.PATH));
                         clouds.add(cloud);
                         break;

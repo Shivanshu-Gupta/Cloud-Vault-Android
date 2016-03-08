@@ -41,6 +41,7 @@ public class AddCloudDialogFragment extends DialogFragment{
         builder.setTitle(R.string.pick_cloud_type)
                 .setItems(R.array.supported_cloud_types_array, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
+                        // Cloud Type Selected. Inform the Parent.
                         mListener.onCloudTypeSelected(AddCloudDialogFragment.this, which);
                     }
                 });

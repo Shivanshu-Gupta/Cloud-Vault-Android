@@ -115,6 +115,9 @@ public class AddCloud extends AppCompatActivity implements CloudListFragment.OnF
         return super.onOptionsItemSelected(item);
     }
 
+    /*
+    * Called inside CloudListFragment after addition of a new Cloud is complete.
+    * */
     @Override
     public void onCloudAdded() {
         // TODO : do whatever might need to be done here
@@ -123,6 +126,9 @@ public class AddCloud extends AppCompatActivity implements CloudListFragment.OnF
         client.upload(null);
     }
 
+    /*
+    * Called inside CloudListFragment after deletion of a Cloud.
+    * */
     @Override
     public void onCloudDeleted(String genericName) {
         Log.v(TAG, "AddCloud : onCloudDeleted");
@@ -135,6 +141,7 @@ public class AddCloud extends AppCompatActivity implements CloudListFragment.OnF
 
     @Override
     public void onCloudsDangerChanged() {
+        Log.v(TAG, "AddCloud : onCloudsDangerChanged");
         // TODO : do whatever might need to be done here
     }
 

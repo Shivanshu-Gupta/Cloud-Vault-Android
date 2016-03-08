@@ -11,7 +11,7 @@ import com.dropbox.client2.exception.DropboxException;
 import com.dropbox.client2.session.AppKeyPair;
 
 /**
- * Created by cyberLab on 28-11-2015.
+ * Created by Shivanshu on 28-11-2015.
  */
 public class AccountInfo extends IntentService {
     private static final String TAG = "CloudVault";
@@ -62,18 +62,20 @@ public class AccountInfo extends IntentService {
                     try {
                         if(!mApi.getSession().isLinked()) {
                             Log.v(TAG, "still not linked!!!!");
+                            break;
                         }
                         DropboxAPI.Account account = mApi.accountInfo();
                         long uid = account.uid;
                         String email = account.email;
                         Log.v(TAG, "AccountInfo : UID : " + uid);
                         infoIntent = new Intent(ACCOUNT_INFO);
-                        infoIntent.putExtra("uid", uid);
-                        infoIntent.putExtra("email", email);
+                        infoIntent.putExtra(Dropbox.UID, uid);
+                        infoIntent.putExtra(Dropbox.EMAIL, email);
                         success = true;
                     } catch (DropboxException e) {
                         e.printStackTrace();
                     }
+                    break;
             }
         }
         if(!success) {

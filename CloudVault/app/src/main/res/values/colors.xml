@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="transparent">#00000000</color>
-    <color name="cloudmeta_list_item_bg">#ffffff</color>
+    <color name="cloudmeta_list_item_bg">#FFFFFF</color>
     <color name="view_divider_color">#BABABA</color>
+    <color name="white">#FFFFFF</color>
 </resources>

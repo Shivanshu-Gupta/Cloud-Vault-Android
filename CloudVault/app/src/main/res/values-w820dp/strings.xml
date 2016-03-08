@@ -5,4 +5,6 @@
     <string name="delete">Delete</string>
     <string name="upload_chooser_title">Choose the File to Upload</string>
     <string name="add_cloud_btn">Add New Cloud</string>
+    <string name="welcome">Welcome to CloudVault</string>
+    <string name="fresh_install_ques">Do you want to setup a new Cloud Vault?</string>
 </resources>

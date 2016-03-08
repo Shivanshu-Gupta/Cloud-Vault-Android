@@ -37,7 +37,10 @@ public class CloudSharedPref {
 		String jsonClouds = gson.toJson(clouds);
         Log.v(TAG, "CloudsMetaData: " + jsonClouds);
 		editor.putString(CLOUDS_META, jsonClouds);
-		editor.putInt(NEXT_ID, settings.getInt(NEXT_ID, 0) + 1);
+		if(clouds.size() > 0)
+			editor.putInt(NEXT_ID, clouds.get(clouds.size() - 1).getId() + 1);
+		else
+			editor.putInt(NEXT_ID, 0);
 		editor.commit();
 	}
 

@@ -2,19 +2,40 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.cloudsecurity.cloudvault" >
 
-   <application
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+
+    <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
+
+        <!-- ACTIVITIES -->
+        <!-- Splash Activity -->
         <activity
-            android:name=".CloudVault"
-            android:label="@string/app_name" >
+            android:name=".SplashActivity"
+            android:label="@string/app_name"
+            android:theme="@style/SplashTheme" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- CloudVault Main Activity -->
+        <activity
+            android:name=".CloudVault"
+            android:configChanges="orientation|screenSize"
+            android:label="@string/app_name" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+            </intent-filter>
+        </activity>
+
+        <!-- Dropbox Authentication Activity -->
         <activity
             android:name="com.dropbox.client2.android.AuthActivity"
             android:configChanges="orientation|keyboard"
@@ -28,6 +49,8 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
+        <!-- File Chooser Activity -->
         <activity
             android:name="com.ipaulpro.afilechooser.FileChooserActivity"
             android:enabled="@bool/use_activity"
@@ -44,30 +67,32 @@
                 <data android:mimeType="*/*" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".cloud.dropbox.DropboxAuthenticator" >
+
+        <!-- Dropbox Authenticator Activity -->
+        <activity android:name=".cloud.dropbox.DropboxAuthenticator" >
             <intent-filter>
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".settings.SettingsActivity" >
+        <!--Settings Main Activity -->
+        <activity android:name=".settings.SettingsActivity" >
             <intent-filter>
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
 
+        <!-- Settings Cloud Configuration Activity - Configure Clouds Used by CloudVault -->
         <activity
             android:name=".settings.AddCloud"
             android:label="@string/app_name" >
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
 
-
+        <!-- PROVIDERS -->
         <provider
             android:name="com.ianhanniballake.localstorage.LocalStorageProvider"
             android:authorities="com.ianhanniballake.localstorage.documents"
@@ -80,19 +105,20 @@
             </intent-filter>
         </provider>
 
-       <service
-            android:name=".cloud.dropbox.AccountInfo"
-            android:exported="false" >
-        </service>
+        <!-- SERVICES -->
+        <!-- Vault Client Service -->
         <service
             android:name=".VaultClient"
             android:enabled="true"
             android:exported="false" >
         </service>
 
+        <!-- Dropbox AccountInfo Service - Fetches user's account info.-->
+        <service
+            android:name=".cloud.dropbox.AccountInfo"
+            android:exported="false" >
+        </service>
+
     </application>
 
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 </manifest>

@@ -67,7 +67,7 @@ public class CloudListAdapter extends ArrayAdapter<CloudMeta> {
         } else {
             holder = (ViewHolder) convertView.getTag();
         }
-        CloudMeta cloudMeta = (CloudMeta) getItem(position);
+        CloudMeta cloudMeta = getItem(position);
         holder.cloudNameTxt.setText(cloudMeta.getName());
         ConcurrentHashMap<String, String> meta = cloudMeta.getMeta();
         //TODO: output the meta data properly for each cloud type

@@ -19,6 +19,7 @@ import java.io.IOException;
 public class FolderCloud  implements Cloud {
     private static final String TAG = "CloudVault";
     public static final String FOLDERCLOUD = "FOLDERCLOUD";
+    public static final String FolderCloud = "FolderCloud";
 
     public static final String PATH = "path";
 
