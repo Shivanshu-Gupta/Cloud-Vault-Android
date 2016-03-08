@@ -84,7 +84,7 @@
 
         <!-- Settings Cloud Configuration Activity - Configure Clouds Used by CloudVault -->
         <activity
-            android:name=".settings.AddCloud"
+            android:name=".settings.CloudsConfigureActivity"
             android:label="@string/app_name" >
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />

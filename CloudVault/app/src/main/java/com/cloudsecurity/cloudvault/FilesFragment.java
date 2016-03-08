@@ -49,7 +49,6 @@ public class FilesFragment extends ListFragment {
 
     private DatabaseHelper db = null;
     private AsyncTask task = null;
-    private OnFragmentInteractionListener mListener;
 
     VaultClient client;
     boolean mBound;
@@ -227,17 +226,17 @@ public class FilesFragment extends ListFragment {
                                             null, null, null, DatabaseHelper.FILENAME);
                 long size = 0;
                 String[] cloudsUsed = null;
-                int minCLouds = 0;
+                int minClouds = 0;
                 String timestamp = "";
                 if(result.moveToFirst())
                 {
                     size = result.getLong(result.getColumnIndex(DatabaseHelper.SIZE));
                     Gson gson = new Gson();
                     cloudsUsed = gson.fromJson(result.getString(result.getColumnIndex(DatabaseHelper.CLOUDLIST)), String[].class);
-                    minCLouds = result.getInt(result.getColumnIndex(DatabaseHelper.MINCLOUDS));
+                    minClouds = result.getInt(result.getColumnIndex(DatabaseHelper.MINCLOUDS));
                     timestamp = result.getString(result.getColumnIndex(DatabaseHelper.TIMESTAMP));
                 }
-                String message = new FilesDetailsFragment(filename, size, cloudsUsed, minCLouds, timestamp).getMessage();
+                String message = new FilesDetailsFragment(filename, size, cloudsUsed, minClouds, timestamp).getMessage();
                 AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
                 builder.setMessage(message).setTitle(filename);
                 AlertDialog dialog = builder.create();
@@ -265,11 +264,7 @@ public class FilesFragment extends ListFragment {
     private void showSettingPreferences() {
 
         Intent myIntent = new Intent (getActivity(),SettingsActivity.class);
-//        try {
-            startActivity(myIntent);
-//        } catch (ActivityNotFoundException e) {
-            // The reason for the existence of aFileChooser
-//        }
+        startActivity(myIntent);
     }
 
     @Override
@@ -380,7 +375,11 @@ public class FilesFragment extends ListFragment {
         }
     }
 
-    //    @Override
+
+    /*
+    * OnFragmentInteractionListener not required.
+    * */
+//        @Override
 //    public void onAttach(Activity activity) {
 //        super.onAttach(activity);
 //        try {
@@ -390,15 +389,14 @@ public class FilesFragment extends ListFragment {
 //                    + " must implement OnFragmentInteractionListener");
 //        }
 //    }
-
-    //    @Override
+//
+//        @Override
 //    public void onDetach() {
 //        super.onDetach();
 //        mListener = null;
 //    }
-
-    public interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
-        public void onFragmentInteraction(Uri uri);
-    }
+//
+//    public interface OnFragmentInteractionListener {
+//        public void onFragmentInteraction(Uri uri);
+//    }
 }

@@ -55,7 +55,7 @@ public class SettingsActivity extends PreferenceActivity implements SharedPrefer
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         Log.v(TAG, "SettingsActivity : onSharedPreferenceChanged : " + key);
         if (key.equals("adding")) {
-            Intent intent = new Intent(getApplicationContext(), AddCloud.class);
+            Intent intent = new Intent(getApplicationContext(), CloudsConfigureActivity.class);
             startActivity(intent);
         }
         else if(key.equals("endangered_list")) {

@@ -39,14 +39,13 @@ public class SetupOneFragment extends Fragment {
      * Use this factory method to create a new instance of
      * this fragment using the provided parameters.
      *
-     * @param param1 Parameter 1.
      * @return A new instance of fragment SetupOneFragment.
      */
     // TODO: Rename and change types and number of parameters
-    public static SetupOneFragment newInstance(String param1) {
+    public static SetupOneFragment newInstance() {
         SetupOneFragment fragment = new SetupOneFragment();
         Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
+//        args.putString(ARG_PARAM1, param1);
         fragment.setArguments(args);
         return fragment;
     }
@@ -60,7 +59,7 @@ public class SetupOneFragment extends Fragment {
         Log.v(TAG, "SetupOneFragment : onCreate");
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
+//            mParam1 = getArguments().getString(ARG_PARAM1);
         }
     }
 

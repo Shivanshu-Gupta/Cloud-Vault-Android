@@ -48,16 +48,12 @@ public class CloudVault extends AppCompatActivity implements SetupOneFragment.On
         int cloudCount = cloudSharedPref.getCloudCount(this);
         if(cloudCount >= 4) {
             Log.v(TAG, "Enough Clouds for functioning. Setting the content to Files Fragment.");
-            contentFragment = new FilesFragment();
+            contentFragment = FilesFragment.newInstance();
             setFragmentTitle(R.string.app_name);
             switchContent(contentFragment, FilesFragment.ARG_ITEM_ID);
         } else {
-            /*Log.v(TAG, "Not Enough Clouds for functioning. Setting the content to Cloud List Fragment.");
-            contentFragment = new CloudListFragment();
-            setFragmentTitle(R.string.clouds);
-            switchContent(contentFragment, CloudListFragment.ARG_ITEM_ID);*/
             Log.v(TAG, "Not Enough Clouds for functioning. Setting the content to SetupOneFragment");
-            contentFragment = new SetupOneFragment();
+            contentFragment = SetupOneFragment.newInstance();
             setFragmentTitle(R.string.setup_step_one);
             switchContent(contentFragment, SetupOneFragment.ARG_ITEM_ID);
         }
@@ -208,7 +204,7 @@ public class CloudVault extends AppCompatActivity implements SetupOneFragment.On
             client.download(null);
         }
         Log.v(TAG, "CloudVault Setup Complete. Switching to Files Fragment.");
-        contentFragment = new FilesFragment();
+        contentFragment = FilesFragment.newInstance();
         setFragmentTitle(R.string.app_name);
         switchContent(contentFragment, FilesFragment.ARG_ITEM_ID);
     }

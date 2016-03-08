@@ -131,15 +131,10 @@ public class SetupTwoFragment extends Fragment
 
     @Override
     public void onCloudDeleted(String genericName) {
-        nCloudsAdded++;
+        nCloudsAdded--;
         if(nCloudsAdded < 4) {
             completeButton.setEnabled(false);
         }
-    }
-
-    @Override
-    public void onCloudsDangerChanged() {
-        //TODO
     }
 
     /**

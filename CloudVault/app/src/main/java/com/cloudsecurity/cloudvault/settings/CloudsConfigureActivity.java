@@ -25,11 +25,11 @@ import com.cloudsecurity.cloudvault.cloud.CloudListFragment;
 
 /**
  * Created by Noman on 11/25/2015.
- * This class is used to add any clouds via AddCloud option in the Settings Tab
+ * This class is used to add any clouds via CloudsConfigureActivity option in the Settings Tab
  */
 
 
-public class AddCloud extends AppCompatActivity implements CloudListFragment.OnFragmentInteractionListener {
+public class CloudsConfigureActivity extends AppCompatActivity implements CloudListFragment.OnFragmentInteractionListener {
     private static final String TAG = "CloudVault";
 
     VaultClient client;
@@ -44,7 +44,7 @@ public class AddCloud extends AppCompatActivity implements CloudListFragment.OnF
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.v(TAG, "AddCloud : onCreate");
+        Log.v(TAG, "CloudsConfigureActivity : onCreate");
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_cloud_vault);
@@ -73,7 +73,7 @@ public class AddCloud extends AppCompatActivity implements CloudListFragment.OnF
                 if(intent !=null) {
                     final String action = intent.getAction();
                     if(action.equals(VaultClient.FILE_CLOUDLISTS_UPDATED)) {
-                        // cloudLists have been updated, databases needs to be uploaded
+                        Log.i(TAG, "File CloudLists have been updated. Uploading the new Database.");
                         client.upload(null);
                     }
                 }
@@ -84,7 +84,7 @@ public class AddCloud extends AppCompatActivity implements CloudListFragment.OnF
 
     @Override
     protected void onStart() {
-        Log.v(TAG, "AddCloud : onStart");
+        Log.v(TAG, "CloudsConfigureActivity : onStart");
         super.onStart();
         // Bind to LocalService
         Intent intent = new Intent(this, VaultClient.class);
@@ -94,7 +94,7 @@ public class AddCloud extends AppCompatActivity implements CloudListFragment.OnF
 
     @Override
     protected void onStop() {
-        Log.v(TAG, "AddCloud : onStop");
+        Log.v(TAG, "CloudsConfigureActivity : onStop");
         super.onStop();
     }
 
@@ -120,8 +120,7 @@ public class AddCloud extends AppCompatActivity implements CloudListFragment.OnF
     * */
     @Override
     public void onCloudAdded() {
-        // TODO : do whatever might need to be done here
-        Log.v(TAG, "AddCloud : onCloudAdded");
+        Log.v(TAG, "CloudsConfigureActivity : onCloudAdded");
         client.updateClouds();
         client.upload(null);
     }
@@ -131,18 +130,10 @@ public class AddCloud extends AppCompatActivity implements CloudListFragment.OnF
     * */
     @Override
     public void onCloudDeleted(String genericName) {
-        Log.v(TAG, "AddCloud : onCloudDeleted");
+        Log.v(TAG, "CloudsConfigureActivity : onCloudDeleted");
         client.updateClouds();
         client.updateFileCloudLists(genericName);
-
-        //database upload takes place after client bcasts that it's done updatinf cloudlists.
-//        client.upload(null);
-    }
-
-    @Override
-    public void onCloudsDangerChanged() {
-        Log.v(TAG, "AddCloud : onCloudsDangerChanged");
-        // TODO : do whatever might need to be done here
+        //database upload takes place after client bcasts that it's done updating cloudlists.
     }
 
     public void switchContent(Fragment fragment, String tag) {
@@ -169,25 +160,27 @@ public class AddCloud extends AppCompatActivity implements CloudListFragment.OnF
 
     @Override
     protected void onResume() {
-        Log.v(TAG, "AddCloud : onResume");
+        Log.v(TAG, "CloudsConfigureActivity : onResume");
         super.onResume();
+        mLocalBroadcastManager.registerReceiver(receiver, filter);
     }
 
     @Override
     protected void onPause() {
-        Log.v(TAG, "AddCloud : onPause");
+        Log.v(TAG, "CloudsConfigureActivity : onPause");
         super.onPause();
+        mLocalBroadcastManager.unregisterReceiver(receiver);
     }
 
     @Override
     protected void onRestart() {
-        Log.v(TAG, "AddCloud : onRestart");
+        Log.v(TAG, "CloudsConfigureActivity : onRestart");
         super.onRestart();
     }
 
     @Override
     protected void onDestroy() {
-        Log.v(TAG, "AddCloud : onDestroy");
+        Log.v(TAG, "CloudsConfigureActivity : onDestroy");
         super.onDestroy();
         Intent intent = new Intent(this, VaultClient.class);
         stopService(intent);

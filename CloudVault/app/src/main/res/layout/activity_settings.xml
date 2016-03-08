@@ -12,7 +12,6 @@
         android:drawSelectorOnTop="true"
         android:footerDividersEnabled="false"
         android:padding="10dp"
-        android:scrollbarStyle="outsideOverlay"
-        android:layout_above="@+id/upload_button" />
+        android:scrollbarStyle="outsideOverlay" />
 
 </RelativeLayout>

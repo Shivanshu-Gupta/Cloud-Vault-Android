@@ -472,10 +472,7 @@ public class CloudListFragment extends Fragment implements AddCloudDialogFragmen
 
     public interface OnFragmentInteractionListener {
         void onCloudAdded();
-
         void onCloudDeleted(String genericName);
-
-        void onCloudsDangerChanged();
     }
 
 
