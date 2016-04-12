@@ -15,7 +15,9 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
+import android.support.v7.widget.Toolbar;
 
+import com.cloudsecurity.cloudvault.settings.SettingsActivity;
 import com.cloudsecurity.cloudvault.util.CloudSharedPref;
 
 import com.cloudsecurity.cloudvault.setup.SetupOneFragment;
@@ -43,6 +45,9 @@ public class CloudVault extends AppCompatActivity implements SetupOneFragment.On
         Log.v(TAG, "CloudVault : onCreate");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_cloud_vault);
+
+        Toolbar myToolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(myToolbar);
 
         CloudSharedPref cloudSharedPref = new CloudSharedPref(this);
         int cloudCount = cloudSharedPref.getCloudCount(this);
@@ -117,14 +122,19 @@ public class CloudVault extends AppCompatActivity implements SetupOneFragment.On
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
+        switch (item.getItemId()) {
+            case R.id.action_settings:
+                // User chose the "Settings" item, show the app settings UI...
+                Intent myIntent = new Intent (this, SettingsActivity.class);
+                startActivity(myIntent);
+                return true;
 
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
+            default:
+                // If we got here, the user's action was not recognized.
+                // Invoke the superclass to handle it.
+                return super.onOptionsItemSelected(item);
+
         }
-
-        return super.onOptionsItemSelected(item);
     }
 
     public void switchContent(Fragment fragment, String tag) {
@@ -208,4 +218,5 @@ public class CloudVault extends AppCompatActivity implements SetupOneFragment.On
         setFragmentTitle(R.string.app_name);
         switchContent(contentFragment, FilesFragment.ARG_ITEM_ID);
     }
+
 }

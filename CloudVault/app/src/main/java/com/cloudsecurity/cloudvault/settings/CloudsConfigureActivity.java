@@ -47,7 +47,7 @@ public class CloudsConfigureActivity extends AppCompatActivity implements CloudL
         Log.v(TAG, "CloudsConfigureActivity : onCreate");
         super.onCreate(savedInstanceState);
 
-        setContentView(R.layout.activity_cloud_vault);
+        setContentView(R.layout.activity_clouds_configure);
         contentFragment = new CloudListFragment();
         setFragmentTitle(R.string.clouds);
         switchContent(contentFragment, CloudListFragment.ARG_ITEM_ID);

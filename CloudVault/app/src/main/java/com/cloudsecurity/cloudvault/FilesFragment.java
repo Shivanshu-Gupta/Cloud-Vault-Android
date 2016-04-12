@@ -45,7 +45,6 @@ public class FilesFragment extends ListFragment {
     //view elements
     private Button uploadButton;
     private Button syncButton;
-    private Button settingButton;
 
     private DatabaseHelper db = null;
     private AsyncTask task = null;
@@ -135,16 +134,6 @@ public class FilesFragment extends ListFragment {
                 client.sync();
             }
         });
-
-        settingButton = (Button) view.findViewById(R.id.setting_button);
-        settingButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Log.v(TAG, "FilesFragment : setting button clicked.");
-                showSettingPreferences();
-            }
-        });
-
 
         return view;
 
@@ -259,12 +248,6 @@ public class FilesFragment extends ListFragment {
         } catch (ActivityNotFoundException e) {
             // The reason for the existence of aFileChooser
         }
-    }
-
-    private void showSettingPreferences() {
-
-        Intent myIntent = new Intent (getActivity(),SettingsActivity.class);
-        startActivity(myIntent);
     }
 
     @Override
