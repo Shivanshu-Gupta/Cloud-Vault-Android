@@ -1,5 +1,4 @@
-# Cloud-Vault-Android
-# Cloud-Vault
+# Cloud Vault - Android
 This is the Android implementation of Framework for Cloud Storage designed as a part of my project for the Summer Undergraduate Research Award (SURA). The framework uses Fountain Codes to emulate a reliable, secure and consolidated cloud storage service over multiple cloud storages from different cloud service providers. 
 
 Fountain codes can be used to transform a file into an effectively unlimited number of encoded chunks which could be stored on different cloud storages. At the time of retrieval, the original file can be reassembled given any subset of those chunks, as long as the total size of the chunks was little more than the size of the original file.
